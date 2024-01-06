@@ -1,1 +1,1 @@
-# problem_parser_bot
+# Goals scheduler bot

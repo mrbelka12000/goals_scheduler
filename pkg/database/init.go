@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
+
+	"goals_scheduler/pkg/config"
 )
 
 // Connect ..
-func Connect() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./forum.db?_foreign_keys=on")
+func Connect(cfg config.Config) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", fmt.Sprintf("./%s?_foreign_keys=on", cfg.PathToDB))
 	if err != nil {
 		return nil, fmt.Errorf("open: %w", err)
 	}
