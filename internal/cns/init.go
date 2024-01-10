@@ -3,7 +3,7 @@ package cns
 import "fmt"
 
 const (
-	DateFormat = "2021-11-22"
+	DateFormat = "2006-01-02"
 )
 
 type StatusGoal string
@@ -27,10 +27,11 @@ const (
 )
 
 const (
-	KeyText     = "text"
-	KeyDeadline = "deadline"
-	KeyState    = "state"
-	KeyNotify   = "notify"
+	KeyText          = "text"
+	KeyDeadline      = "deadline"
+	KeyState         = "state"
+	KeyNotify        = "notify"
+	KeyNotifyEnabled = "notify_enabled"
 )
 
 var KeysToGoal = []string{KeyText, KeyDeadline, KeyNotify, KeyState}

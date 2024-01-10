@@ -6,26 +6,28 @@ import (
 	"goals_scheduler/internal/cns"
 )
 
-type Notifier struct {
-	ID          int64              `json:"id,omitempty"`
-	UsrID       int64              `json:"usr_id"`
-	Text        string             `json:"text,omitempty"`
-	Ticker      time.Duration      `json:"ticker,omitempty"`
-	Status      cns.StatusNotifier `json:"status,omitempty"`
-	LastUpdated time.Time          `json:"last_updated"`
-	Expires     time.Time          `json:"expires"`
-}
+type (
+	Notifier struct {
+		ID          int64              `json:"id,omitempty"`
+		UsrID       int                `json:"usr_id,omitempty"`
+		ChatID      string             `json:"chat_id,omitempty"`
+		Notify      time.Duration      `json:"notify,omitempty"`
+		LastUpdated time.Time          `json:"last_updated"`
+		Status      cns.StatusNotifier `json:"status"`
+		GoalID      *int64             `json:"goal_id"`
+	}
 
-type NotifierCU struct {
-	UsrID   *int64              `json:"usr_id"`
-	Text    *string             `json:"text,omitempty"`
-	Ticker  *time.Duration      `json:"ticker,omitempty"`
-	Status  *cns.StatusNotifier `json:"status,omitempty"`
-	Expires *time.Time          `json:"expires"`
-}
+	NotifierCU struct {
+		UsrID  *int
+		ChatID *string
+		GoalID *int64
+		Notify *time.Duration
+		Status *cns.StatusNotifier
+	}
 
-type NotifierPars struct {
-	ID     *int64
-	UsrID  *int64
-	Status *cns.StatusNotifier
-}
+	NotifierPars struct {
+		ID     *int64
+		UsrID  *int64
+		Status *cns.StatusNotifier
+	}
+)

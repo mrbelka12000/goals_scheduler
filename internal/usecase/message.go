@@ -1,7 +1,12 @@
 package usecase
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"time"
+
+	"github.com/AlekSi/pointer"
 
 	"goals_scheduler/internal/cns"
 	"goals_scheduler/internal/models"
@@ -38,13 +43,59 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 	case cns.MessageStateNotifier:
 		uc.cache.Set(cns.GetKeyNotify(msg.UserID), msg.Text, 0)
 		mp := make(map[string]interface{})
+
 		for _, k := range cns.KeysToGoal {
 			key := fmt.Sprintf("%v:%v", k, msg.UserID)
 			val, _ := uc.cache.Get(key)
 			mp[k] = val
 			uc.cache.Delete(key)
 		}
-		fmt.Println(mp)
+
+		// parse time from request
+		{
+			parsedTime, err := time.Parse(cns.DateFormat, mp[cns.KeyDeadline].(string))
+			if err != nil {
+				uc.log.Err(err).Msg(fmt.Sprintf("parse time: %v", mp[cns.KeyDeadline]))
+				return "Что то пошло не так", ""
+			}
+			mp[cns.KeyDeadline] = parsedTime
+		}
+
+		// parse ticker duration
+		{
+			durStr := mp[cns.KeyNotify].(string)
+			if durStr != "" {
+				dur, err := time.ParseDuration(durStr)
+				if err != nil {
+					uc.log.Err(err).Msg(fmt.Sprintf("parse duration: %v", mp[cns.KeyNotify]))
+					return "Что то пошло не так", ""
+				}
+				mp[cns.KeyNotify] = dur
+				mp[cns.KeyNotifyEnabled] = true
+			} else {
+				mp[cns.KeyNotifyEnabled] = false
+			}
+		}
+
+		{
+			var goal models.GoalCU
+
+			jsonBody, _ := json.Marshal(mp)
+			err := json.Unmarshal(jsonBody, &goal)
+			if err != nil {
+				uc.log.Err(err).Msg("goal from map")
+				return "Что то пошло не так", ""
+			}
+
+			goal.UsrID = pointer.ToInt(msg.UserID)
+			goal.ChatID = pointer.ToString(msg.ChatID)
+
+			_, err = uc.GoalCreate(context.Background(), goal)
+			if err != nil {
+				uc.log.Err(err).Msg("goal create")
+				return "Что то пошло не так", ""
+			}
+		}
 
 		return "Цель сохранилась", ""
 	}

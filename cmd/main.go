@@ -4,8 +4,10 @@ import (
 	"os"
 
 	"github.com/rs/zerolog"
+	"github.com/yanzay/tbot/v2"
 
 	"goals_scheduler/internal/bot"
+	"goals_scheduler/internal/cronjobs"
 	"goals_scheduler/internal/repo"
 	"goals_scheduler/internal/service"
 	"goals_scheduler/internal/usecase"
@@ -36,10 +38,22 @@ func main() {
 
 	rp := repo.New(db)
 	srv := service.New(rp)
-	uc := usecase.New(log, srv, cache)
+	uc := usecase.New(
+		log,
+		srv,
+		cache,
+	)
+	telBot := tbot.New(cfg.TelegramToken)
+	app := bot.NewApp(
+		telBot.Client(),
+		uc,
+		log,
+	)
+
+	go cronjobs.Start(app)
 
 	log.Info().Msg("Bot started")
-	if err := bot.Start(cfg, uc); err != nil {
+	if err := bot.Start(telBot, app); err != nil {
 		log.Error().Err(err).Msg("start bot")
 		return
 	}

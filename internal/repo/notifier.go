@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
 	"goals_scheduler/internal/models"
@@ -19,9 +20,17 @@ func newNotifier(db *sql.DB) *notifier {
 	}
 }
 
-func (r *notifier) Create(ctx context.Context, obj *models.NotifierCU) (int64, error) {
-	query := "INSERT INTO notifier (usr_id, status_id, ticker, last_updated, expires) VALUES (?, ?, ?, ?, ?)"
-	result, err := r.db.ExecContext(ctx, query, *obj.UsrID, obj.Status, *obj.Ticker, time.Now(), obj.Expires)
+func (n *notifier) Create(ctx context.Context, obj *models.NotifierCU) (int64, error) {
+	query := "INSERT INTO notifier (usr_id, chat_id, status_id, goal_id, notify,last_updated) VALUES (?, ?, ?, ?, ?, ?)"
+
+	result, err := n.db.ExecContext(ctx, query,
+		*obj.UsrID,
+		*obj.ChatID,
+		*obj.Status,
+		*obj.GoalID,
+		*obj.Notify,
+		time.Now(),
+	)
 	if err != nil {
 		return 0, err
 	}
@@ -34,26 +43,34 @@ func (r *notifier) Create(ctx context.Context, obj *models.NotifierCU) (int64, e
 	return id, nil
 }
 
-func (r *notifier) Delete(ctx context.Context, id int64) error {
+func (n *notifier) Delete(ctx context.Context, id int64) error {
 	query := "DELETE FROM notifier WHERE id = ?"
-	_, err := r.db.ExecContext(ctx, query, id)
+	_, err := n.db.ExecContext(ctx, query, id)
 	return err
 }
 
-func (r *notifier) Get(ctx context.Context, id int64) (models.Notifier, error) {
-	query := "SELECT id, usr_id, status_id, ticker, last_updated, expires FROM notifier WHERE id = ?"
-	var notifier models.Notifier
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&notifier.ID, &notifier.UsrID, &notifier.Status, &notifier.Ticker, &notifier.LastUpdated, &notifier.Expires)
+func (n *notifier) Get(ctx context.Context, id int64) (models.Notifier, error) {
+	query := "SELECT id, usr_id, chat_id, status_id, goal_id, notify, last_updated FROM notifier WHERE id = ?"
+	var notif models.Notifier
+	err := n.db.QueryRowContext(ctx, query, id).Scan(
+		&notif.ID,
+		&notif.UsrID,
+		&notif.ChatID,
+		&notif.Status,
+		&notif.GoalID,
+		&notif.Notify,
+		&notif.LastUpdated,
+	)
 	if err != nil {
 		return models.Notifier{}, err
 	}
 
-	return notifier, nil
+	return notif, nil
 }
 
-func (r *notifier) List(ctx context.Context, pars models.NotifierPars) ([]models.Notifier, int64, error) {
-	query := "SELECT id, usr_id, notifier_id, message, status_id, deadline FROM goals WHERE"
-	args := []interface{}{}
+func (n *notifier) List(ctx context.Context, pars models.NotifierPars) ([]models.Notifier, int64, error) {
+	query := "SELECT id, usr_id, chat_id, status_id, goal_id, notify, last_updated FROM notifier WHERE"
+	var args []interface{}
 
 	if pars.ID != nil {
 		query += " id = ? AND"
@@ -69,33 +86,67 @@ func (r *notifier) List(ctx context.Context, pars models.NotifierPars) ([]models
 		query += " status_id = ? AND"
 		args = append(args, *pars.Status)
 	}
-
 	query = query[:len(query)-4] // Remove the trailing " AND"
-	fmt.Println(query, args)
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := n.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
 
-	var notifiers []models.Notifier
+	var notifs []models.Notifier
 	for rows.Next() {
-		var notifier models.Notifier
-		err := rows.Scan(&notifier.ID, &notifier.UsrID, &notifier.Status, &notifier.Ticker, &notifier.LastUpdated, &notifier.Expires)
+		var notif models.Notifier
+
+		err := rows.Scan(
+			&notif.ID,
+			&notif.UsrID,
+			&notif.ChatID,
+			&notif.Status,
+			&notif.GoalID,
+			&notif.Notify,
+			&notif.LastUpdated,
+		)
 		if err != nil {
 			return nil, 0, err
 		}
-		notifiers = append(notifiers, notifier)
+
+		notifs = append(notifs, notif)
 	}
 
-	countQuery := "SELECT COUNT(*) FROM notifier WHERE"
-	countQuery += query[6:] // Remove the "SELECT" part from the count query
-	var count int64
-	err = r.db.QueryRowContext(ctx, countQuery, args...).Scan(&count)
+	return notifs, 0, nil
+}
+
+func (n *notifier) Update(ctx context.Context, obj models.NotifierCU, id int64) error {
+	updateValues := []interface{}{id}
+	queryUpdate := ` UPDATE notifier`
+	querySet := ` SET id = id`
+	queryWhere := ` WHERE id = $1`
+
+	updateValues = append(updateValues, time.Now())
+	querySet += ", last_updated = $" + strconv.Itoa(len(updateValues))
+
+	if obj.UsrID != nil {
+		updateValues = append(updateValues, *obj.UsrID)
+		querySet += ` , usr_id = $` + strconv.Itoa(len(updateValues))
+	}
+	if obj.ChatID != nil {
+		updateValues = append(updateValues, *obj.ChatID)
+		querySet += ` , chat_id = $` + strconv.Itoa(len(updateValues))
+	}
+	if obj.Status != nil {
+		updateValues = append(updateValues, *obj.Status)
+		querySet += ` , status_id = $` + strconv.Itoa(len(updateValues))
+	}
+
+	if obj.GoalID != nil {
+		updateValues = append(updateValues, *obj.GoalID)
+		querySet += ` , goal_id = $` + strconv.Itoa(len(updateValues))
+	}
+
+	_, err := n.db.ExecContext(ctx, queryUpdate+querySet+queryWhere, updateValues...)
 	if err != nil {
-		return nil, 0, err
+		return err
 	}
 
-	return notifiers, count, nil
+	return nil
 }

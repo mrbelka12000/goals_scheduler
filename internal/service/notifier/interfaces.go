@@ -11,4 +11,5 @@ type repo interface {
 	Delete(ctx context.Context, id int64) error
 	Get(ctx context.Context, id int64) (models.Notifier, error)
 	List(ctx context.Context, pars models.NotifierPars) ([]models.Notifier, int64, error)
+	Update(ctx context.Context, obj models.NotifierCU, id int64) error
 }

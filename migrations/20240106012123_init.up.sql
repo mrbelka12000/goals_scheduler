@@ -1,18 +1,25 @@
-CREATE TABLE IF NOT EXISTS goals (
-    id integer primary key autoincrement not null,
-    usr_id integer not null,
-    notifier_id integer not null,
-    message text not null,
-    status_id integer not null,
-    deadline DATETIME not null,
-    FOREIGN KEY(notifier_id) REFERENCES notifier(id) ON DELETE CASCADE
+create table goals
+(
+    id        integer  not null
+        primary key autoincrement,
+    usr_id    integer  not null,
+    chat_id   text     not null,
+    message   text     not null,
+    status_id integer  not null,
+    deadline  DATETIME not null
 );
 
-CREATE TABLE IF NOT EXISTS notifier (
-    id integer primary key autoincrement not null,
-    usr_id integer not null,
-    status_id integer not null,
-    ticker text not null,
+create table notifier
+(
+    id           integer  not null
+        primary key autoincrement,
+    usr_id       integer  not null,
+    chat_id      text     not null,
     last_updated DATETIME not null,
-    expires DATETIME not null
-)
+    goal_id      integer  not null
+        references goals
+            on delete cascade,
+    status_id    integer  not null,
+    notify       integer  not null
+);
+
