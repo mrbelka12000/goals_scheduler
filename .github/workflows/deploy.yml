@@ -44,4 +44,4 @@ jobs:
           chmod 600 ~/.ssh/id_rsa.pub
       - name: copy builds to server
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.USER_IP }} "echo test"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.USER_IP }} "cd goals_scheduler && docker compose -f app.yml pull && docker compose -f app.yml up --build -d && exit"
