@@ -139,6 +139,12 @@ func generateMonth(year int, month int) [][]tbot.InlineKeyboardButton {
 	weekday := int(firstDay.Weekday())
 	rowDays := []tbot.InlineKeyboardButton{}
 
+	var row []tbot.InlineKeyboardButton
+	for i := 0; i < weekday; i++ {
+		row = append(row, tbot.InlineKeyboardButton{Text: " ", CallbackData: "-"})
+	}
+	rowDays = append(rowDays, row...)
+
 	amountWeek := weekday
 	for i := 1; i <= amountDaysInMonth; i++ {
 		if amountWeek == 7 {
@@ -146,6 +152,7 @@ func generateMonth(year int, month int) [][]tbot.InlineKeyboardButton {
 			amountWeek = 0
 			rowDays = []tbot.InlineKeyboardButton{}
 		}
+
 		day := strconv.Itoa(i)
 		if len(day) == 1 {
 			day = fmt.Sprintf("0%v", day)
@@ -159,7 +166,6 @@ func generateMonth(year int, month int) [][]tbot.InlineKeyboardButton {
 		if time.Now().Day() == i {
 			btnText = fmt.Sprintf("%v", i)
 		}
-		//btn := tgbotapi.NewInlineKeyboardButtonData(btnText, fmt.Sprintf("%v.%v.%v", year, monthStr, day))
 		rowDays = append(rowDays, tbot.InlineKeyboardButton{Text: btnText, CallbackData: fmt.Sprintf("%v %v-%v-%v", CallbackCalendar, year, monthStr, day)})
 		amountWeek++
 	}
