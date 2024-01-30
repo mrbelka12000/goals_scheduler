@@ -1,4 +1,4 @@
-create table goals
+create table if not exists goals
 (
     id        integer  not null
         primary key autoincrement,
@@ -9,7 +9,7 @@ create table goals
     deadline  DATETIME not null
 );
 
-create table notifier
+create table if not exists notifier
 (
     id           integer  not null
         primary key autoincrement,

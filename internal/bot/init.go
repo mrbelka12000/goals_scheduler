@@ -24,7 +24,7 @@ type Application struct {
 func NewApp(client *tbot.Client, uc *usecase.UseCase, log zerolog.Logger) *Application {
 	return &Application{
 		Client:   client,
-		calendar: newCalendar(client),
+		calendar: newCalendar(client, log),
 		Uc:       uc,
 		Log:      log,
 	}

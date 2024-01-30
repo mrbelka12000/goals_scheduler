@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/yanzay/tbot/v2"
 )
 
@@ -21,6 +22,7 @@ type (
 		// Key is fmt.Sprintf(chatID+:+messageID)
 		store map[string]*info
 		sync.Mutex
+		log zerolog.Logger
 	}
 	info struct {
 		year  int
@@ -28,18 +30,23 @@ type (
 	}
 )
 
-func newCalendar(client *tbot.Client) *calendar {
+func newCalendar(client *tbot.Client, log zerolog.Logger) *calendar {
 	return &calendar{
 		client: client,
 		store:  make(map[string]*info),
+		log:    log,
 	}
 }
 
 func (c *calendar) calendarHandler(m *tbot.Message) {
 	now := time.Now()
-	calendar := c.GenerateCalendar(now.Year(), now.Month())
+	inlineCalendar := c.GenerateCalendar(now.Year(), now.Month())
 
-	msg, _ := c.client.SendMessage(m.Chat.ID, "Дедлайн", tbot.OptInlineKeyboardMarkup(calendar))
+	msg, err := c.client.SendMessage(m.Chat.ID, "Дедлайн", tbot.OptInlineKeyboardMarkup(inlineCalendar))
+	if err != nil {
+		c.log.Err(err).Msg("send calendar")
+		return
+	}
 
 	c.Lock()
 	c.store[fmt.Sprintf("%v:%v", m.Chat.ID, msg.MessageID)] = &info{
@@ -126,16 +133,11 @@ func addDaysNamesRow() []tbot.InlineKeyboardButton {
 
 func generateMonth(year int, month int) [][]tbot.InlineKeyboardButton {
 	firstDay := date(year, month, 0)
-	now := time.Now()
 	amountDaysInMonth := date(year, month+1, 0).Day()
 	var rows [][]tbot.InlineKeyboardButton
 
 	weekday := int(firstDay.Weekday())
 	rowDays := []tbot.InlineKeyboardButton{}
-	for i := 1; i <= weekday; i++ {
-		btn := tbot.InlineKeyboardButton{Text: " ", CallbackData: "-"}
-		rowDays = append(rowDays, btn)
-	}
 
 	amountWeek := weekday
 	for i := 1; i <= amountDaysInMonth; i++ {
@@ -143,11 +145,6 @@ func generateMonth(year int, month int) [][]tbot.InlineKeyboardButton {
 			rows = append(rows, rowDays)
 			amountWeek = 0
 			rowDays = []tbot.InlineKeyboardButton{}
-		}
-		if i < now.Day() && year == now.Year() && month == int(now.Month()) {
-			rowDays = append(rowDays, tbot.InlineKeyboardButton{Text: string(i), CallbackData: "-"})
-			amountWeek++
-			continue
 		}
 		day := strconv.Itoa(i)
 		if len(day) == 1 {
@@ -170,6 +167,7 @@ func generateMonth(year int, month int) [][]tbot.InlineKeyboardButton {
 	for len(rowDays) != 7 {
 		rowDays = append(rowDays, tbot.InlineKeyboardButton{Text: " ", CallbackData: "-"})
 	}
+
 	rows = append(rows, rowDays)
 
 	return rows
