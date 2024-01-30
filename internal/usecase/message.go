@@ -39,7 +39,11 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 	case cns.MessageStateDeadline:
 		uc.cache.Set(cns.GetKeyDeadline(msg.UserID), msg.Text, 0)
 		uc.cache.Set(cns.GetKeyState(msg.UserID), cns.MessageStateNotifier, 0)
-		return "Введите время для напоминания", cns.MessageStateNotifier
+
+		return fmt.Sprintf(`
+		Введите время для напоминания
+Допустимые единицы времени: "ns", "us" (или "µs"), "ms", "s", "m", "h".
+		`), cns.MessageStateNotifier
 	case cns.MessageStateNotifier:
 		uc.cache.Set(cns.GetKeyNotify(msg.UserID), msg.Text, 0)
 		mp := make(map[string]interface{})
