@@ -23,7 +23,7 @@ func notifier(app *bot.Application) {
 	}
 
 	for _, l := range list {
-		if l.LastUpdated.Add(l.Notify).Before(time.Now()) {
+		if l.LastUpdated.Add(l.Notify).Before(time.Now()) && l.Notify != 0 {
 			app.Client.SendMessage(l.ChatID, "Privet Privet")
 
 			err = app.Uc.NotifierUpdate(context.Background(), models.NotifierCU{}, l.ID)
