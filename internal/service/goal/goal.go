@@ -38,3 +38,7 @@ func (g *Goal) Get(ctx context.Context, id int64) (models.Goal, error) {
 func (g *Goal) List(ctx context.Context, pars models.GoalPars) ([]models.Goal, int64, error) {
 	return g.repo.List(ctx, pars)
 }
+
+func (g *Goal) DeleteAllOfUsers(ctx context.Context, usrID int) error {
+	return g.repo.DeleteAllUsersGoals(ctx, usrID)
+}

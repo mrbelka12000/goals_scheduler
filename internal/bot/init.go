@@ -37,6 +37,7 @@ func Start(bot *tbot.Server, app *Application) error {
 	bot.HandleMessage("/goal", app.handleCreateGoal)
 	bot.HandleMessage("/c", app.calendar.calendarHandler)
 	bot.HandleMessage(".*", app.handleAllMessages)
+	bot.HandleMessage("/delete_goals", app.deleteUsersGoals)
 
 	bot.HandleCallback(app.handleCallbacks)
 
@@ -98,4 +99,15 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 		}
 		return
 	}
+}
+
+func (a *Application) deleteUsersGoals(m *tbot.Message) {
+	err := a.Uc.GoalDeleteAllOfUsers(context.Background(), m.From.ID)
+	if err != nil {
+		a.Log.Err(err).Msg("delete user`s goals")
+		a.Client.SendMessage(m.Chat.ID, "Что то пошло не так")
+		return
+	}
+
+	a.Client.SendMessage(m.Chat.ID, "Все удалено")
 }

@@ -91,3 +91,9 @@ func (r *goal) List(ctx context.Context, pars models.GoalPars) ([]models.Goal, i
 
 	return goals, 0, nil
 }
+
+func (r *goal) DeleteAllUsersGoals(ctx context.Context, usrID int) error {
+	query := "DELETE FROM goals where usr_id =?"
+	_, err := r.db.ExecContext(ctx, query, usrID)
+	return err
+}

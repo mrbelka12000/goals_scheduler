@@ -11,4 +11,5 @@ type repo interface {
 	Delete(ctx context.Context, id int64) error
 	Get(ctx context.Context, id int64) (models.Goal, error)
 	List(ctx context.Context, pars models.GoalPars) ([]models.Goal, int64, error)
+	DeleteAllUsersGoals(ctx context.Context, usrID int) error
 }

@@ -38,3 +38,7 @@ func (uc *UseCase) GoalGet(ctx context.Context, id int64) (models.Goal, error) {
 func (uc *UseCase) GoalList(ctx context.Context, pars models.GoalPars) ([]models.Goal, int64, error) {
 	return uc.srv.Goal.List(ctx, pars)
 }
+
+func (uc *UseCase) GoalDeleteAllOfUsers(ctx context.Context, usrID int) error {
+	return uc.srv.Goal.DeleteAllOfUsers(ctx, usrID)
+}
