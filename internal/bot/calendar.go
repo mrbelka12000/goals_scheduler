@@ -19,6 +19,7 @@ const (
 type (
 	calendar struct {
 		client *tbot.Client
+
 		// Key is fmt.Sprintf(chatID+:+messageID)
 		store map[string]*info
 		sync.Mutex
@@ -115,8 +116,7 @@ func (c *calendar) handleCallback(cq *tbot.CallbackQuery) string {
 
 func addMonthYearRow(year int, month time.Month) []tbot.InlineKeyboardButton {
 	btn := tbot.InlineKeyboardButton{Text: fmt.Sprintf("%s %v", month, year), CallbackData: "-"}
-	row := []tbot.InlineKeyboardButton{btn}
-	return row
+	return []tbot.InlineKeyboardButton{btn}
 }
 
 func addDaysNamesRow() []tbot.InlineKeyboardButton {
@@ -132,14 +132,16 @@ func addDaysNamesRow() []tbot.InlineKeyboardButton {
 }
 
 func generateMonth(year int, month int) [][]tbot.InlineKeyboardButton {
-	firstDay := date(year, month, 0)
-	amountDaysInMonth := date(year, month+1, 0).Day()
-	var rows [][]tbot.InlineKeyboardButton
 
-	weekday := int(firstDay.Weekday())
-	rowDays := []tbot.InlineKeyboardButton{}
+	var (
+		firstDay          = date(year, month, 0)
+		amountDaysInMonth = date(year, month+1, 0).Day()
+		rowDays           []tbot.InlineKeyboardButton
+		rows              [][]tbot.InlineKeyboardButton
+		weekday           = int(firstDay.Weekday())
+		row               []tbot.InlineKeyboardButton
+	)
 
-	var row []tbot.InlineKeyboardButton
 	for i := 0; i < weekday; i++ {
 		row = append(row, tbot.InlineKeyboardButton{Text: " ", CallbackData: "-"})
 	}

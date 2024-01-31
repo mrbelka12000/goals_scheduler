@@ -36,8 +36,8 @@ func Start(bot *tbot.Server, app *Application) error {
 	bot.HandleMessage("/goals", app.handleGetGoal)
 	bot.HandleMessage("/goal", app.handleCreateGoal)
 	bot.HandleMessage("/c", app.calendar.calendarHandler)
-	bot.HandleMessage(".*", app.handleAllMessages)
 	bot.HandleMessage("/delete_goals", app.deleteUsersGoals)
+	bot.HandleMessage(".*", app.handleAllMessages)
 
 	bot.HandleCallback(app.handleCallbacks)
 
@@ -61,10 +61,16 @@ func (a *Application) handleGetGoal(m *tbot.Message) {
 	list, _, err := a.Uc.GoalList(context.Background(), models.GoalPars{UsrID: pointer.ToInt(m.From.ID)})
 	if err != nil {
 		a.Client.SendMessage(m.Chat.ID, "Что то пошло не так")
+		a.Log.Err(err).Msg("get goals list")
 		return
 	}
 
-	a.Client.SendMessage(m.Chat.ID, "Goals", tbot.OptInlineKeyboardMarkup(generateGoalBottons(list)))
+	if len(list) == 0 {
+		a.Client.SendMessage(m.Chat.ID, "Пока что у вас нет целей")
+		return
+	}
+
+	a.Client.SendMessage(m.Chat.ID, "Цели", tbot.OptInlineKeyboardMarkup(generateGoalBottons(list)))
 }
 
 func (a *Application) handleAllMessages(m *tbot.Message) {
