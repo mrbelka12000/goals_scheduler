@@ -3,11 +3,16 @@ package notifier
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/AlekSi/pointer"
 
 	"goals_scheduler/internal/cns"
 	"goals_scheduler/internal/models"
+)
+
+const (
+	infDur = 24 * 365 * 10 * time.Hour
 )
 
 type Notifier struct {
@@ -22,6 +27,10 @@ func NewNotifier(repo repo) *Notifier {
 
 func (n *Notifier) Create(ctx context.Context, obj *models.NotifierCU) (int64, error) {
 	obj.Status = pointer.To(cns.StatusNotifierStarted)
+	if obj.Notify == nil {
+		obj.Notify = pointer.ToDuration(infDur)
+	}
+	obj.LastUpdated = pointer.ToTime(time.Now().Add(*obj.Notify))
 
 	id, err := n.repo.Create(ctx, obj)
 	if err != nil {

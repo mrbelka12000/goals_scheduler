@@ -51,7 +51,9 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 		`), cns.MessageStateNotifier
 
 	case cns.MessageStateNotifier:
-		uc.cache.Set(cns.GetKeyNotify(msg.UserID), msg.Text, 0)
+		if msg.Text != "-" {
+			uc.cache.Set(cns.GetKeyNotify(msg.UserID), msg.Text, 0)
+		}
 		mp := make(map[string]interface{})
 
 		// collect states
@@ -83,7 +85,7 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 				mp[cns.KeyNotify] = dur
 				mp[cns.KeyNotifyEnabled] = true
 			} else {
-				mp[cns.KeyNotifyEnabled] = false
+				delete(mp, cns.KeyNotify)
 			}
 		}
 

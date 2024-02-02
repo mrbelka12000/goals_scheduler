@@ -18,11 +18,12 @@ type (
 	}
 
 	NotifierCU struct {
-		UsrID  *int
-		ChatID *string
-		GoalID *int64
-		Notify *time.Duration
-		Status *cns.StatusNotifier
+		UsrID       *int
+		ChatID      *string
+		GoalID      *int64
+		Notify      *time.Duration
+		Status      *cns.StatusNotifier
+		LastUpdated *time.Time
 	}
 
 	NotifierPars struct {

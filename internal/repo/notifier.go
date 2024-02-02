@@ -29,7 +29,7 @@ func (n *notifier) Create(ctx context.Context, obj *models.NotifierCU) (int64, e
 		*obj.Status,
 		*obj.GoalID,
 		*obj.Notify,
-		time.Now(),
+		*obj.LastUpdated,
 	)
 	if err != nil {
 		return 0, err
@@ -119,12 +119,13 @@ func (n *notifier) List(ctx context.Context, pars models.NotifierPars) ([]models
 func (n *notifier) Update(ctx context.Context, obj models.NotifierCU, id int64) error {
 	updateValues := []interface{}{id}
 	queryUpdate := ` UPDATE notifier`
-	querySet := ` SET id = id`
+	querySet := ` SET id = $1`
 	queryWhere := ` WHERE id = $1`
 
-	updateValues = append(updateValues, time.Now())
-	querySet += ", last_updated = $" + strconv.Itoa(len(updateValues))
-
+	if obj.Notify != nil {
+		updateValues = append(updateValues, time.Now().Add(*obj.Notify))
+		querySet += ", last_updated = $" + strconv.Itoa(len(updateValues))
+	}
 	if obj.UsrID != nil {
 		updateValues = append(updateValues, *obj.UsrID)
 		querySet += ` , usr_id = $` + strconv.Itoa(len(updateValues))
@@ -143,6 +144,7 @@ func (n *notifier) Update(ctx context.Context, obj models.NotifierCU, id int64) 
 		querySet += ` , goal_id = $` + strconv.Itoa(len(updateValues))
 	}
 
+	fmt.Println(queryUpdate, querySet, updateValues)
 	_, err := n.db.ExecContext(ctx, queryUpdate+querySet+queryWhere, updateValues...)
 	if err != nil {
 		return err
