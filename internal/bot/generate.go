@@ -16,11 +16,11 @@ func generateGoalBottons(list []models.Goal) *tbot.InlineKeyboardMarkup {
 		var row []tbot.InlineKeyboardButton
 
 		row = append(row, tbot.InlineKeyboardButton{
-			Text:         fmt.Sprintf("Goal-%v", l.Text),
+			Text:         fmt.Sprintf("%v", l.Text),
 			CallbackData: "-",
 		})
 		row = append(row, tbot.InlineKeyboardButton{
-			Text:         fmt.Sprintf("Deadline-%v", l.Deadline.Format(cns.DateFormat)),
+			Text:         fmt.Sprintf("%v", l.Deadline.Format(cns.DateFormat)),
 			CallbackData: "-",
 		})
 
