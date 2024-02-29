@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-co-op/gocron"
 
-	"goals_scheduler/internal/bot"
+	"goals_scheduler/internal/delivery/bot"
 )
 
 func Start(app *bot.Application) {

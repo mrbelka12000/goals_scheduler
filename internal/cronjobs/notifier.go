@@ -6,8 +6,8 @@ import (
 
 	"github.com/AlekSi/pointer"
 
-	"goals_scheduler/internal/bot"
 	"goals_scheduler/internal/cns"
+	"goals_scheduler/internal/delivery/bot"
 	"goals_scheduler/internal/models"
 )
 

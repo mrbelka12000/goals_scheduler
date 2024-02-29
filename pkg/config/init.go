@@ -13,6 +13,7 @@ type Config struct {
 	TelegramToken  string `env:"TELEGRAM_TOKEN,required"`
 	RedisAddr      string `env:"REDIS_ADDR"`
 	MigrationsPath string `env:"MIGRATIONS_PATH, default=migrations/"`
+	HttpPort       string `env:"HTTP_PORT, default=8080"`
 }
 
 func Get() (Config, error) {
