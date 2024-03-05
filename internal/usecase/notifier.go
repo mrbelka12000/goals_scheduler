@@ -2,12 +2,29 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 
+	"goals_scheduler/internal/client/webhooker"
 	"goals_scheduler/internal/models"
 )
 
 func (uc *UseCase) NotifierCreate(ctx context.Context, obj *models.NotifierCU) (int64, error) {
-	return uc.srv.Notifier.Create(ctx, obj)
+	id, err := uc.srv.Notifier.Create(ctx, obj)
+	if err != nil {
+		return 0, err
+	}
+
+	err = uc.webHooker.CreateWebHook(ctx, webhooker.CreateWebHookRequest{
+		Params: map[string]string{
+			"id": fmt.Sprint(id),
+		},
+		EndTime: obj.EndTime,
+	})
+	if err != nil {
+		uc.log.Err(err).Msg("can not create web hooker notification")
+	}
+
+	return id, nil
 }
 
 func (uc *UseCase) NotifierGet(ctx context.Context, id int64) (models.Notifier, error) {

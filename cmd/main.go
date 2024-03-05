@@ -6,6 +6,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/yanzay/tbot/v2"
 
+	"goals_scheduler/internal/client/webhooker"
 	"goals_scheduler/internal/cronjobs"
 	"goals_scheduler/internal/delivery/bot"
 	v1 "goals_scheduler/internal/delivery/http/v1"
@@ -37,10 +38,11 @@ func main() {
 		log.Error().Err(err).Msg("connect to redis")
 		return
 	}
+	webHookerCl := webhooker.NewClient(cfg)
 
 	rp := repo.New(db)
 	srv := service.New(rp)
-	uc := usecase.New(log, srv, cache)
+	uc := usecase.New(log, srv, cache, webHookerCl)
 
 	telBot := tbot.New(cfg.TelegramToken)
 	app := bot.NewApp(telBot.Client(), uc, log)

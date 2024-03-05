@@ -17,11 +17,12 @@ func (uc *UseCase) GoalCreate(ctx context.Context, obj models.GoalCU) (int64, er
 
 	if obj.NotifyEnabled {
 		_, err = uc.NotifierCreate(ctx, &models.NotifierCU{
-			UsrID:  obj.UsrID,
-			ChatID: obj.ChatID,
-			GoalID: &id,
-			Notify: obj.NotifyTime,
-			Status: pointer.To(cns.StatusNotifierStarted),
+			UsrID:   obj.UsrID,
+			ChatID:  obj.ChatID,
+			GoalID:  &id,
+			Notify:  obj.NotifyTime,
+			Status:  pointer.To(cns.StatusNotifierStarted),
+			EndTime: *obj.Deadline,
 		})
 		if err != nil {
 			uc.log.Err(err).Msg("notifier create")

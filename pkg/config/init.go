@@ -14,6 +14,8 @@ type Config struct {
 	RedisAddr      string `env:"REDIS_ADDR"`
 	MigrationsPath string `env:"MIGRATIONS_PATH, default=migrations/"`
 	HttpPort       string `env:"HTTP_PORT, default=8080"`
+	WebHookerURL   string `env:"WEBHOOKER_URL,required"`
+	ServiceName    string `env:"SERVICE_NAME,required"`
 }
 
 func Get() (Config, error) {

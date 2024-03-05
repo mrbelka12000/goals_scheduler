@@ -24,6 +24,7 @@ type (
 		Notify      *time.Duration
 		Status      *cns.StatusNotifier
 		LastUpdated *time.Time
+		EndTime     time.Time
 	}
 
 	NotifierPars struct {
