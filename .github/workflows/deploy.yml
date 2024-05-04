@@ -44,4 +44,4 @@ jobs:
           chmod 600 ~/.ssh/id_rsa.pub
       - name: copy builds to server
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.USER_IP }} "docker service update --force --image ghcr.io/${{ secrets.OWNER }}/goals_scheduler:latest tbot_goals_scheduler"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.USER_IP }} "docker service update --force --image ghcr.io/${{ secrets.OWNER }}/goals_scheduler:latest goals_scheduler_service"
