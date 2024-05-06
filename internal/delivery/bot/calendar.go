@@ -39,14 +39,13 @@ func newCalendar(client *tbot.Client, log zerolog.Logger) *calendar {
 	}
 }
 
-func (c *calendar) calendarHandler(m *tbot.Message) {
+func (c *calendar) calendarHandler(m *tbot.Message) error {
 	now := time.Now()
 	inlineCalendar := c.GenerateCalendar(now.Year(), now.Month())
 
 	msg, err := c.client.SendMessage(m.Chat.ID, "Дедлайн", tbot.OptInlineKeyboardMarkup(inlineCalendar))
 	if err != nil {
-		c.log.Err(err).Msg("send calendar")
-		return
+		return fmt.Errorf("send calendar: %w", err)
 	}
 
 	c.Lock()
@@ -55,6 +54,8 @@ func (c *calendar) calendarHandler(m *tbot.Message) {
 		month: now.Month(),
 	}
 	c.Unlock()
+
+	return nil
 }
 
 func (c *calendar) GenerateCalendar(year int, month time.Month) *tbot.InlineKeyboardMarkup {

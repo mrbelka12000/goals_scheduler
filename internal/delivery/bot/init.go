@@ -35,7 +35,7 @@ func Start(bot *tbot.Server, app *Application) error {
 	bot.HandleMessage("/start", app.handleStart)
 	bot.HandleMessage("/goals", app.handleGetGoal)
 	bot.HandleMessage("/goal", app.handleCreateGoal)
-	bot.HandleMessage("/c", app.calendar.calendarHandler)
+	bot.HandleMessage("/c", app.generateCalendar)
 	bot.HandleMessage("/delete_goals", app.deleteUsersGoals)
 	bot.HandleMessage(".*", app.handleAllMessages)
 
@@ -116,4 +116,12 @@ func (a *Application) deleteUsersGoals(m *tbot.Message) {
 	}
 
 	a.Client.SendMessage(m.Chat.ID, "Все удалено")
+}
+
+func (a *Application) generateCalendar(m *tbot.Message) {
+	err := a.calendar.calendarHandler(m)
+	if err != nil {
+		a.Log.Err(err).Msg("generate calendar")
+		return
+	}
 }

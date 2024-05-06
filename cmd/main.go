@@ -9,14 +9,12 @@ import (
 	"goals_scheduler/internal/client/webhooker"
 	"goals_scheduler/internal/cronjobs"
 	"goals_scheduler/internal/delivery/bot"
-	v1 "goals_scheduler/internal/delivery/http/v1"
 	"goals_scheduler/internal/repo"
 	"goals_scheduler/internal/service"
 	"goals_scheduler/internal/usecase"
 	"goals_scheduler/pkg/cache/redis"
 	"goals_scheduler/pkg/config"
 	"goals_scheduler/pkg/database"
-	"goals_scheduler/pkg/server"
 )
 
 func main() {
@@ -46,9 +44,6 @@ func main() {
 
 	telBot := tbot.New(cfg.TelegramToken)
 	app := bot.NewApp(telBot.Client(), uc, log)
-
-	server := server.NewServer(v1.RegisterHandlers(uc), cfg)
-	defer server.Shutdown()
 
 	go cronjobs.Start(app)
 
