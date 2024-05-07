@@ -23,9 +23,11 @@ func Connect(cfg config.Config) (*sql.DB, error) {
 		return nil, fmt.Errorf("ping: %w", err)
 	}
 
-	err = useMigrates(db, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("migrates: %w", err)
+	if cfg.UseMigrates {
+		err = useMigrates(db, cfg)
+		if err != nil {
+			return nil, fmt.Errorf("migrates: %w", err)
+		}
 	}
 
 	return db, nil

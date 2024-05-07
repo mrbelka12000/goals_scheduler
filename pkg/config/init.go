@@ -16,6 +16,7 @@ type Config struct {
 	MigrationsPath string `env:"MIGRATIONS_PATH, default=migrations/"`
 	HttpPort       string `env:"HTTP_PORT, default=8080"`
 	ServiceName    string `env:"SERVICE_NAME,required"`
+	UseMigrates    bool   `env:"USE_MIGRATES,default=false"`
 }
 
 func Get() (Config, error) {
