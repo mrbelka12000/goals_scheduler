@@ -31,7 +31,7 @@ func (uc *UseCase) HandleMessage(msg models.Message) (string, string) {
 		return uc.handleStates(msg, state)
 	}
 
-	return "Все ок", ""
+	return "", ""
 }
 
 func (uc *UseCase) handleStates(msg models.Message, state string) (string, string) {
@@ -116,7 +116,7 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 			uc.cache.Delete(key)
 		}
 
-		return "Цель сохранилась", ""
+		return "Цель сохранилась", cns.MessageStateDone
 	}
 
 	return "Не туда", ""

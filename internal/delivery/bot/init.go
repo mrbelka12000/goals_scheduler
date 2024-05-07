@@ -54,6 +54,10 @@ func (a *Application) handleAllMessages(m *tbot.Message) {
 		Text:   m.Text,
 	})
 
+	if state == "" {
+		return
+	}
+
 	if state == cns.MessageStateDeadline {
 		a.calendar.calendarHandler(m)
 		return

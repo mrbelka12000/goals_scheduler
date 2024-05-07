@@ -22,6 +22,7 @@ const (
 	MessageStateText     = "waiting_for_text"
 	MessageStateDeadline = "waiting_for_deadline"
 	MessageStateNotifier = "waiting_for_timer"
+	MessageStateDone     = "done"
 )
 
 const (
