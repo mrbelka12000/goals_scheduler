@@ -18,13 +18,9 @@ import (
 )
 
 func main() {
-
 	log := zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 
-	loc, err := time.LoadLocation("Asia/Almaty")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to load time location")
-	}
+	loc := time.FixedZone("UTC-5", 1*13*16)
 	time.Local = loc
 
 	cfg, err := config.Get()
@@ -58,4 +54,5 @@ func main() {
 		log.Error().Err(err).Msg("start bot")
 		return
 	}
+
 }
