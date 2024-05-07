@@ -20,7 +20,7 @@ func generateGoalBottons(list []models.Goal, useCallback bool) *tbot.InlineKeybo
 		}
 
 		row = append(row, tbot.InlineKeyboardButton{
-			Text:         fmt.Sprintf("Цель: %v   |   Cрок: %v  |   Статус: %v", l.Text, l.Deadline.Format(cns.DateFormat), cns.StatusMapper(l.Status)),
+			Text:         fmt.Sprintf("Цель: %v   |   %v  |   Статус: %v", l.Text, l.Deadline.Format(cns.DateFormat), cns.StatusMapper(l.Status)),
 			CallbackData: callbackData,
 		})
 
