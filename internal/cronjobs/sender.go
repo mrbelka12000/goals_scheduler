@@ -29,8 +29,6 @@ func sender(app *bot.Application) {
 	}
 
 	for _, goal := range goals {
-		fmt.Println(goal.LastUpdated)
-		//now := time.Now().In(loc)
 		if goal.LastUpdated.Before(time.Now()) && goal.Deadline.After(time.Now()) {
 			app.Client.SendMessage(goal.ChatID, fmt.Sprintf(notifMessage, goal.Text))
 
