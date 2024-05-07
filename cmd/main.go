@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/yanzay/tbot/v2"
@@ -18,14 +17,7 @@ import (
 )
 
 func main() {
-
 	log := zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
-
-	loc, err := time.LoadLocation("Asia/Almaty")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to load time location")
-	}
-	time.Local = loc
 
 	cfg, err := config.Get()
 	if err != nil {
