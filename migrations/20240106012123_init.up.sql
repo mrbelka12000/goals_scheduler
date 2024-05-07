@@ -1,13 +1,11 @@
-create table if not exists goals
-(
-    id        integer  not null
-        primary key autoincrement,
-    usr_id    integer  not null,
-    chat_id   text     not null,
-    message   text     not null,
-    status_id integer  not null,
-    deadline  DATETIME not null,
-    timer_enabled bool not null,
-    timer     integer,
-    last_updated DATETIME not null
+CREATE TABLE IF NOT EXISTS goals (
+                                     id SERIAL PRIMARY KEY,
+                                     usr_id INTEGER NOT NULL,
+                                     chat_id TEXT NOT NULL,
+                                     message TEXT NOT NULL,
+                                     status_id TEXT NOT NULL,
+                                     deadline timestamp WITH TIME ZONE DEFAULT NOW(),
+                                     timer_enabled BOOLEAN NOT NULL,
+                                     timer BIGINT,
+                                     last_updated timestamp WITH TIME ZONE DEFAULT NOW()
 );

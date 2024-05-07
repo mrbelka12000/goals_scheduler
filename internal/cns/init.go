@@ -1,6 +1,8 @@
 package cns
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	DateFormat         = "2006-01-02"

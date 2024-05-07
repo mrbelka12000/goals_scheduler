@@ -11,7 +11,7 @@ import (
 func Start(app *bot.Application) {
 	s := gocron.NewScheduler(time.UTC)
 
-	s.Every(30).Second().Do(func() {
+	s.Every(15).Second().Do(func() {
 		sender(app)
 	})
 
