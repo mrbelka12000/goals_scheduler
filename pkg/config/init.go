@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	PathToDB       string `env:"PATH_TO_DB,required"`
+	//PathToDB       string `env:"PATH_TO_DB,required"`
+	PGURL          string `env:"PG_URL,required"`
 	TelegramToken  string `env:"TELEGRAM_TOKEN,required"`
 	RedisAddr      string `env:"REDIS_ADDR"`
 	MigrationsPath string `env:"MIGRATIONS_PATH, default=migrations/"`

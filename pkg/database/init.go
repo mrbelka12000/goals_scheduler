@@ -6,14 +6,14 @@ import (
 	"os"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 
 	"goals_scheduler/pkg/config"
 )
 
 // Connect ..
 func Connect(cfg config.Config) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", fmt.Sprintf("./%s?_foreign_keys=on", cfg.PathToDB))
+	db, err := sql.Open("postgres", cfg.PGURL)
 	if err != nil {
 		return nil, fmt.Errorf("open: %w", err)
 	}
@@ -25,7 +25,7 @@ func Connect(cfg config.Config) (*sql.DB, error) {
 
 	err = useMigrates(db, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("init migrates")
+		return nil, fmt.Errorf("migrates: %w", err)
 	}
 
 	return db, nil

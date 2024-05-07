@@ -27,6 +27,7 @@ type (
 		Deadline     *time.Time      `json:"deadline,omitempty"`
 		TimerEnabled bool            `json:"timer_enabled"`
 		Timer        *time.Duration  `json:"timer"`
+		LastUpdated  *time.Time      `json:"last_updated,omitempty"`
 	}
 
 	GoalPars struct {

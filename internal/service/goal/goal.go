@@ -27,6 +27,8 @@ func (g *Goal) Create(ctx context.Context, obj *models.GoalCU) (int64, error) {
 		obj.Timer = pointer.ToDuration(365 * 24 * time.Hour)
 	}
 
+	obj.LastUpdated = pointer.To(time.Now().Add(*obj.Timer))
+
 	id, err := g.repo.Create(ctx, obj)
 	if err != nil {
 		return 0, fmt.Errorf("create goal in db: %w", err)
