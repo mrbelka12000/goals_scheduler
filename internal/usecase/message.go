@@ -12,8 +12,12 @@ import (
 	"goals_scheduler/internal/models"
 )
 
+const (
+	blockTime = 5 * time.Minute
+)
+
 func (uc *UseCase) StartGoal(msg models.Message) string {
-	err := uc.cache.Set(cns.GetKeyState(msg.UserID), cns.MessageStateText, 0)
+	err := uc.cache.Set(cns.GetKeyState(msg.UserID), cns.MessageStateText, blockTime)
 	if err != nil {
 		uc.log.Error().Err(err).Msg("set cache")
 		return "Возникла ошибка, повторите позже"
@@ -34,25 +38,20 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 	switch state {
 	case cns.MessageStateText:
 
-		uc.cache.Set(cns.GetKeyText(msg.UserID), msg.Text, 0)
-		uc.cache.Set(cns.GetKeyState(msg.UserID), cns.MessageStateDeadline, 0)
+		uc.cache.Set(cns.GetKeyText(msg.UserID), msg.Text, blockTime)
+		uc.cache.Set(cns.GetKeyState(msg.UserID), cns.MessageStateDeadline, blockTime)
 		return "Введите крайний срок для цели", cns.MessageStateDeadline
 
 	case cns.MessageStateDeadline:
 
-		uc.cache.Set(cns.GetKeyDeadline(msg.UserID), msg.Text, 0)
-		uc.cache.Set(cns.GetKeyState(msg.UserID), cns.MessageStateNotifier, 0)
+		uc.cache.Set(cns.GetKeyDeadline(msg.UserID), msg.Text, blockTime)
+		uc.cache.Set(cns.GetKeyState(msg.UserID), cns.MessageStateNotifier, blockTime)
 
-		return fmt.Sprintf(`
-		Введите время для напоминания
-Допустимые единицы времени: "ns", "us" (или "µs"), "ms", "s", "m", "h".
-Отправьте - , в случае если не нужно напоминать
-
-		`), cns.MessageStateNotifier
+		return cns.NotifyFormat, cns.MessageStateNotifier
 
 	case cns.MessageStateNotifier:
 		if msg.Text != "-" {
-			uc.cache.Set(cns.GetKeyNotify(msg.UserID), msg.Text, 0)
+			uc.cache.Set(cns.GetKeyNotify(msg.UserID), msg.Text, blockTime)
 		}
 		mp := make(map[string]interface{})
 
@@ -68,24 +67,24 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 			parsedTime, err := time.Parse(cns.DateFormat, mp[cns.KeyDeadline].(string))
 			if err != nil {
 				uc.log.Err(err).Msg(fmt.Sprintf("parse time: %v", mp[cns.KeyDeadline]))
-				return "Что то пошло не так", ""
+				return cns.SomethingWentWrong, ""
 			}
 			mp[cns.KeyDeadline] = parsedTime
 		}
 
 		// parse ticker duration
 		{
-			durStr := mp[cns.KeyNotify].(string)
+			durStr := mp[cns.KeyTimer].(string)
 			if durStr != "" && durStr != "-" {
 				dur, err := time.ParseDuration(durStr)
 				if err != nil {
-					uc.log.Err(err).Msg(fmt.Sprintf("parse duration: %v", mp[cns.KeyNotify]))
-					return "Что то пошло не так", ""
+					uc.log.Err(err).Msg(fmt.Sprintf("parse duration: %v", mp[cns.KeyTimer]))
+					return cns.SomethingWentWrong, ""
 				}
-				mp[cns.KeyNotify] = dur
-				mp[cns.KeyNotifyEnabled] = true
+				mp[cns.KeyTimer] = dur
+				mp[cns.KeyTimerEnabled] = true
 			} else {
-				delete(mp, cns.KeyNotify)
+				delete(mp, cns.KeyTimer)
 			}
 		}
 
@@ -96,7 +95,7 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 			err := json.Unmarshal(jsonBody, &goal)
 			if err != nil {
 				uc.log.Err(err).Msg("goal from map")
-				return "Что то пошло не так", ""
+				return cns.SomethingWentWrong, ""
 			}
 
 			goal.UsrID = pointer.ToInt(msg.UserID)
@@ -105,7 +104,7 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 			_, err = uc.GoalCreate(context.Background(), goal)
 			if err != nil {
 				uc.log.Err(err).Msg("goal create")
-				return "Что то пошло не так", ""
+				return cns.SomethingWentWrong, ""
 			}
 		}
 

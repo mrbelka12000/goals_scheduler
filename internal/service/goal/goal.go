@@ -3,6 +3,7 @@ package goal
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/AlekSi/pointer"
 
@@ -22,6 +23,9 @@ func NewGoal(repo repo) *Goal {
 
 func (g *Goal) Create(ctx context.Context, obj *models.GoalCU) (int64, error) {
 	obj.Status = pointer.To(cns.StatusGoalStarted)
+	if obj.Timer == nil {
+		obj.Timer = pointer.ToDuration(365 * 24 * time.Hour)
+	}
 
 	id, err := g.repo.Create(ctx, obj)
 	if err != nil {
@@ -41,4 +45,12 @@ func (g *Goal) List(ctx context.Context, pars models.GoalPars) ([]models.Goal, i
 
 func (g *Goal) DeleteAllOfUsers(ctx context.Context, usrID int) error {
 	return g.repo.DeleteAllUsersGoals(ctx, usrID)
+}
+
+func (g *Goal) Update(ctx context.Context, obj models.GoalCU, id int64) error {
+	return g.repo.Update(ctx, obj, id)
+}
+
+func (g *Goal) Delete(ctx context.Context, id int64) error {
+	return g.repo.Delete(ctx, id)
 }

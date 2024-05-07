@@ -7,17 +7,15 @@ import (
 )
 
 type UseCase struct {
-	log       zerolog.Logger
-	srv       *service.Service
-	cache     cacher
-	webHooker webHooker
+	log   zerolog.Logger
+	srv   *service.Service
+	cache cacher
 }
 
-func New(log zerolog.Logger, srv *service.Service, cache cacher, wh webHooker) *UseCase {
+func New(log zerolog.Logger, srv *service.Service, cache cacher) *UseCase {
 	return &UseCase{
-		log:       log,
-		srv:       srv,
-		cache:     cache,
-		webHooker: wh,
+		log:   log,
+		srv:   srv,
+		cache: cache,
 	}
 }

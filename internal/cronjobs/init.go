@@ -11,8 +11,12 @@ import (
 func Start(app *bot.Application) {
 	s := gocron.NewScheduler(time.UTC)
 
+	s.Every(30).Second().Do(func() {
+		sender(app)
+	})
+
 	s.Every(15).Second().Do(func() {
-		notifier(app)
+		cleaner(app)
 	})
 
 	s.StartBlocking()

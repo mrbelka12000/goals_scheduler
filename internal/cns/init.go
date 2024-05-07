@@ -3,7 +3,12 @@ package cns
 import "fmt"
 
 const (
-	DateFormat = "2006-01-02"
+	DateFormat         = "2006-01-02"
+	SomethingWentWrong = "Что то пошло не так"
+	NotifyFormat       = `
+		Введите время для напоминания
+Допустимые единицы времени: "ns", "us" (или "µs"), "ms", "s", "m", "h".
+Отправьте - , в случае если не нужно напоминать`
 )
 
 type StatusGoal string
@@ -13,28 +18,21 @@ const (
 	StatusGoalEnded   StatusGoal = "Ended"
 )
 
-type StatusNotifier string
-
-const (
-	StatusNotifierStarted StatusNotifier = "Started"
-	StatusNotifierEnded   StatusNotifier = "Ended"
-)
-
 const (
 	MessageStateText     = "waiting_for_text"
 	MessageStateDeadline = "waiting_for_deadline"
-	MessageStateNotifier = "waiting_for_notify_time"
+	MessageStateNotifier = "waiting_for_timer"
 )
 
 const (
-	KeyText          = "text"
-	KeyDeadline      = "deadline"
-	KeyState         = "state"
-	KeyNotify        = "notify"
-	KeyNotifyEnabled = "notify_enabled"
+	KeyText         = "text"
+	KeyDeadline     = "deadline"
+	KeyState        = "state"
+	KeyTimer        = "timer"
+	KeyTimerEnabled = "timer_enabled"
 )
 
-var KeysToGoal = []string{KeyText, KeyDeadline, KeyNotify, KeyState}
+var KeysToGoal = []string{KeyText, KeyDeadline, KeyTimer, KeyState}
 
 func getKey(key string, userID int) string {
 	return fmt.Sprintf("%v:%v", key, userID)
@@ -49,9 +47,20 @@ func GetKeyDeadline(userID int) string {
 }
 
 func GetKeyNotify(userID int) string {
-	return getKey(KeyNotify, userID)
+	return getKey(KeyTimer, userID)
 }
 
 func GetKeyState(userID int) string {
 	return getKey(KeyState, userID)
+}
+
+func StatusMapper(status StatusGoal) string {
+	switch status {
+	case StatusGoalStarted:
+		return "В процессе"
+	case StatusGoalEnded:
+		return "Завершена"
+	default:
+		return ""
+	}
 }

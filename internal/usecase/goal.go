@@ -3,9 +3,6 @@ package usecase
 import (
 	"context"
 
-	"github.com/AlekSi/pointer"
-
-	"goals_scheduler/internal/cns"
 	"goals_scheduler/internal/models"
 )
 
@@ -13,20 +10,6 @@ func (uc *UseCase) GoalCreate(ctx context.Context, obj models.GoalCU) (int64, er
 	id, err := uc.srv.Goal.Create(ctx, &obj)
 	if err != nil {
 		return 0, err
-	}
-
-	if obj.NotifyEnabled {
-		_, err = uc.NotifierCreate(ctx, &models.NotifierCU{
-			UsrID:   obj.UsrID,
-			ChatID:  obj.ChatID,
-			GoalID:  &id,
-			Notify:  obj.NotifyTime,
-			Status:  pointer.To(cns.StatusNotifierStarted),
-			EndTime: *obj.Deadline,
-		})
-		if err != nil {
-			uc.log.Err(err).Msg("notifier create")
-		}
 	}
 
 	return id, nil
@@ -42,4 +25,12 @@ func (uc *UseCase) GoalList(ctx context.Context, pars models.GoalPars) ([]models
 
 func (uc *UseCase) GoalDeleteAllOfUsers(ctx context.Context, usrID int) error {
 	return uc.srv.Goal.DeleteAllOfUsers(ctx, usrID)
+}
+
+func (uc *UseCase) GoalUpdate(ctx context.Context, obj models.GoalCU, id int64) error {
+	return uc.srv.Goal.Update(ctx, obj, id)
+}
+
+func (us *UseCase) GoalDelete(ctx context.Context, id int64) error {
+	return us.srv.Goal.Delete(ctx, id)
 }

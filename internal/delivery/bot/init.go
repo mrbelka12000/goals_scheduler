@@ -1,11 +1,9 @@
 package bot
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
-	"github.com/AlekSi/pointer"
 	"github.com/rs/zerolog"
 	"github.com/yanzay/tbot/v2"
 
@@ -35,8 +33,9 @@ func Start(bot *tbot.Server, app *Application) error {
 	bot.HandleMessage("/start", app.handleStart)
 	bot.HandleMessage("/goals", app.handleGetGoal)
 	bot.HandleMessage("/goal", app.handleCreateGoal)
-	bot.HandleMessage("/c", app.generateCalendar)
-	bot.HandleMessage("/delete_goals", app.deleteUsersGoals)
+	bot.HandleMessage("/c", app.calendar.calendarHandler)
+	bot.HandleMessage("/delete_goal", app.deleteGoal)
+	bot.HandleMessage("/delete_all_goals", app.deleteUsersGoals)
 	bot.HandleMessage(".*", app.handleAllMessages)
 
 	bot.HandleCallback(app.handleCallbacks)
@@ -46,31 +45,6 @@ func Start(bot *tbot.Server, app *Application) error {
 
 func (a *Application) handleStart(m *tbot.Message) {
 	a.Client.SendMessage(m.Chat.ID, fmt.Sprintf("Привет %v", m.From.Username))
-}
-
-func (a *Application) handleCreateGoal(m *tbot.Message) {
-	msg := a.Uc.StartGoal(models.Message{
-		UserID: m.From.ID,
-		Text:   m.Text,
-	})
-
-	a.Client.SendMessage(m.Chat.ID, msg)
-}
-
-func (a *Application) handleGetGoal(m *tbot.Message) {
-	list, _, err := a.Uc.GoalList(context.Background(), models.GoalPars{UsrID: pointer.ToInt(m.From.ID)})
-	if err != nil {
-		a.Client.SendMessage(m.Chat.ID, "Что то пошло не так")
-		a.Log.Err(err).Msg("get goals list")
-		return
-	}
-
-	if len(list) == 0 {
-		a.Client.SendMessage(m.Chat.ID, "Пока что у вас нет целей")
-		return
-	}
-
-	a.Client.SendMessage(m.Chat.ID, "Цели", tbot.OptInlineKeyboardMarkup(generateGoalBottons(list)))
 }
 
 func (a *Application) handleAllMessages(m *tbot.Message) {
@@ -104,24 +78,11 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 			a.Client.SendMessage(cq.Message.Chat.ID, msg)
 		}
 		return
-	}
-}
-
-func (a *Application) deleteUsersGoals(m *tbot.Message) {
-	err := a.Uc.GoalDeleteAllOfUsers(context.Background(), m.From.ID)
-	if err != nil {
-		a.Log.Err(err).Msg("delete user`s goals")
-		a.Client.SendMessage(m.Chat.ID, "Что то пошло не так")
-		return
-	}
-
-	a.Client.SendMessage(m.Chat.ID, "Все удалено")
-}
-
-func (a *Application) generateCalendar(m *tbot.Message) {
-	err := a.calendar.calendarHandler(m)
-	if err != nil {
-		a.Log.Err(err).Msg("generate calendar")
+	} else if strings.Contains(data, CallbackGoal) {
+		msg := a.handleCallbackGoal(cq)
+		if msg != "" {
+			a.Client.SendMessage(cq.Message.Chat.ID, msg)
+		}
 		return
 	}
 }
