@@ -9,14 +9,26 @@ import (
 	"goals_scheduler/internal/models"
 )
 
-func generateGoalBottons(list []models.Goal, useCallback bool) *tbot.InlineKeyboardMarkup {
+func generateGoalBottons(list []models.Goal, useCallback bool, action string, status cns.StatusGoal) *tbot.InlineKeyboardMarkup {
 	val := &tbot.InlineKeyboardMarkup{}
-	callbackData := "-"
+	callbackData := callbackDataBuilder(models.CallbackData{
+		Type: cns.TypeGoal,
+		Goal: &models.GoalData{
+			Action: "-",
+		},
+	})
 
 	for _, l := range list {
 		var row []tbot.InlineKeyboardButton
 		if useCallback {
-			callbackData = fmt.Sprintf("%v %v", CallbackGoal, l.ID)
+			callbackData = callbackDataBuilder(models.CallbackData{
+				Type: cns.TypeGoal,
+				Goal: &models.GoalData{
+					Action: action,
+					ID:     l.ID,
+					Status: status,
+				},
+			})
 		}
 
 		row = append(row, tbot.InlineKeyboardButton{
@@ -30,8 +42,13 @@ func generateGoalBottons(list []models.Goal, useCallback bool) *tbot.InlineKeybo
 	if useCallback {
 		val.InlineKeyboard = append(val.InlineKeyboard, []tbot.InlineKeyboardButton{
 			{
-				Text:         "Отмена",
-				CallbackData: fmt.Sprintf("%v -", CallbackGoal),
+				Text: "Отмена",
+				CallbackData: callbackDataBuilder(models.CallbackData{
+					Type: cns.TypeGoal,
+					Goal: &models.GoalData{
+						Action: "-",
+					},
+				}),
 			},
 		})
 	}

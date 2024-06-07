@@ -8,12 +8,14 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/yanzay/tbot/v2"
+
+	"goals_scheduler/internal/cns"
+	"goals_scheduler/internal/models"
 )
 
 const (
-	BTN_PREV         = "<"
-	BTN_NEXT         = ">"
-	CallbackCalendar = "calendar"
+	BTN_PREV = "<"
+	BTN_NEXT = ">"
 )
 
 type (
@@ -68,18 +70,17 @@ func (c *calendar) GenerateCalendar(year int, month time.Month) *tbot.InlineKeyb
 	return val
 }
 
-func (c *calendar) handleCallback(cq *tbot.CallbackQuery) string {
+func (c *calendar) handleCallback(cq *tbot.CallbackQuery, data *models.CalendarData) string {
 	key := fmt.Sprintf("%s:%d", cq.Message.Chat.ID, cq.Message.MessageID)
 	c.Lock()
 	defer c.Unlock()
 
-	data := cq.Data[len(CallbackCalendar)+1:]
 	info, ok := c.store[key]
 	if !ok {
 		return ""
 	}
 
-	if data == "<" {
+	if data.Action == BTN_PREV {
 		now := time.Now()
 		if info.year < now.Year() {
 			c.client.AnswerCallbackQuery(cq.ID, tbot.OptText("Нельзя ставить цели на прошлое"))
@@ -96,7 +97,7 @@ func (c *calendar) handleCallback(cq *tbot.CallbackQuery) string {
 			info.month = 12
 			info.year--
 		}
-	} else if data == ">" {
+	} else if data.Action == BTN_NEXT {
 		if info.month != 12 {
 			info.month++
 		} else {
@@ -106,7 +107,7 @@ func (c *calendar) handleCallback(cq *tbot.CallbackQuery) string {
 	} else {
 		c.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 		c.client.AnswerCallbackQuery(cq.ID, tbot.OptText("OK"))
-		return data
+		return ""
 	}
 
 	markup := c.GenerateCalendar(info.year, info.month)
@@ -168,7 +169,16 @@ func generateMonth(year int, month int) [][]tbot.InlineKeyboardButton {
 		if time.Now().Day() == i {
 			btnText = fmt.Sprintf("%v", i)
 		}
-		rowDays = append(rowDays, tbot.InlineKeyboardButton{Text: btnText, CallbackData: fmt.Sprintf("%v %v-%v-%v", CallbackCalendar, year, monthStr, day)})
+		rowDays = append(rowDays, tbot.InlineKeyboardButton{
+			Text: btnText,
+			CallbackData: callbackDataBuilder(models.CallbackData{
+				Type: cns.TypeCalendar,
+				Calendar: &models.CalendarData{
+					Data: fmt.Sprintf("%v-%v-%v", year, monthStr, day),
+				},
+			}),
+		})
+
 		amountWeek++
 	}
 
@@ -187,8 +197,18 @@ func date(year, month, day int) time.Time {
 
 func addSpecialButtons() []tbot.InlineKeyboardButton {
 	var rowDays []tbot.InlineKeyboardButton
-	btnPrev := tbot.InlineKeyboardButton{Text: BTN_PREV, CallbackData: fmt.Sprintf("%v %v", CallbackCalendar, BTN_PREV)}
-	btnNext := tbot.InlineKeyboardButton{Text: BTN_NEXT, CallbackData: fmt.Sprintf("%v %v", CallbackCalendar, BTN_NEXT)}
+	btnPrev := tbot.InlineKeyboardButton{Text: BTN_PREV, CallbackData: callbackDataBuilder(models.CallbackData{
+		Type: cns.TypeCalendar,
+		Calendar: &models.CalendarData{
+			Action: BTN_PREV,
+		},
+	})}
+	btnNext := tbot.InlineKeyboardButton{Text: BTN_NEXT, CallbackData: callbackDataBuilder(models.CallbackData{
+		Type: cns.TypeCalendar,
+		Calendar: &models.CalendarData{
+			Action: BTN_NEXT,
+		},
+	})}
 	rowDays = append(rowDays, btnPrev, btnNext)
 	return rowDays
 }

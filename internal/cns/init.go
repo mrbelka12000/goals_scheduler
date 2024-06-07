@@ -16,8 +16,9 @@ const (
 type StatusGoal string
 
 const (
-	StatusGoalStarted StatusGoal = "Started"
-	StatusGoalEnded   StatusGoal = "Ended"
+	StatusGoalStarted StatusGoal = "st"
+	StatusGoalFailed  StatusGoal = "fa"
+	StatusGoalEnded   StatusGoal = "en"
 )
 
 const (
@@ -63,7 +64,14 @@ func StatusMapper(status StatusGoal) string {
 		return "В процессе"
 	case StatusGoalEnded:
 		return "Завершена"
+	case StatusGoalFailed:
+		return "Провалена"
 	default:
 		return ""
 	}
 }
+
+const (
+	TypeCalendar = "calendar"
+	TypeGoal     = "goal"
+)

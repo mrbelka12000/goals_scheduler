@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -31,7 +32,7 @@ func NewApp(client *tbot.Client, uc *usecase.UseCase, log zerolog.Logger) *Appli
 func Start(bot *tbot.Server, app *Application) error {
 
 	bot.HandleMessage("/start", app.handleStart)
-	bot.HandleMessage("/goals", app.handleGetGoal)
+	bot.HandleMessage("/goals", app.handleGetGoals)
 	bot.HandleMessage("/goal", app.handleCreateGoal)
 	bot.HandleMessage("/c", app.calendar.calendarHandler)
 	bot.HandleMessage("/delete_goal", app.deleteGoal)
@@ -72,21 +73,79 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 		return
 	}
 
-	if strings.Contains(data, CallbackCalendar) {
-		msg := a.calendar.handleCallback(cq)
-		if msg != "" {
+	cbData := models.CallbackData{}
+	err := json.Unmarshal([]byte(data), &cbData)
+	if err != nil {
+		a.Log.Err(err).Msg("failed to unmarshal callback data")
+		return
+	}
+
+	var msg string
+
+	switch cbData.Type {
+	case cns.TypeGoal:
+		msg = a.handleCallbackGoal(cq, cbData.Goal)
+	case cns.TypeCalendar:
+		msg = a.calendar.handleCallback(cq, cbData.Calendar)
+		if cbData.Calendar != nil && cbData.Calendar.Data != "" {
 			msg, _ = a.Uc.HandleMessage(models.Message{
 				UserID: cq.From.ID,
-				Text:   msg,
+				Text:   cbData.Calendar.Data,
 			})
-			a.Client.SendMessage(cq.Message.Chat.ID, msg)
 		}
+	}
+	fmt.Println(msg)
+
+	msgData := strings.Split(msg, "|")
+	if len(msgData) == 2 {
+		a.Client.SendMessage(
+			cq.Message.Chat.ID,
+			fmt.Sprintf("Цель: %v", msgData[1]),
+			tbot.OptInlineKeyboardMarkup(GetGoalActions(cbData.Goal.ID)),
+		)
 		return
-	} else if strings.Contains(data, CallbackGoal) {
-		msg := a.handleCallbackGoal(cq)
-		if msg != "" {
-			a.Client.SendMessage(cq.Message.Chat.ID, msg)
-		}
-		return
+	}
+
+	if msg != "" {
+		a.Client.SendMessage(cq.Message.Chat.ID, msg)
+	}
+}
+
+func callbackDataBuilder(cbData models.CallbackData) string {
+	jsonData, err := json.Marshal(cbData)
+	if err != nil {
+		return "-"
+	}
+	return string(jsonData)
+}
+
+func GetGoalActions(id int64) *tbot.InlineKeyboardMarkup {
+	return &tbot.InlineKeyboardMarkup{
+		InlineKeyboard: [][]tbot.InlineKeyboardButton{
+			{
+				{
+					Text: cns.StatusMapper(cns.StatusGoalFailed),
+					CallbackData: callbackDataBuilder(models.CallbackData{
+						Type: cns.TypeGoal,
+						Goal: &models.GoalData{
+							Action: ActionUpdate,
+							ID:     id,
+							Status: cns.StatusGoalFailed,
+						},
+					}),
+				},
+				{
+					Text: cns.StatusMapper(cns.StatusGoalEnded),
+					CallbackData: callbackDataBuilder(models.CallbackData{
+						Type: cns.TypeGoal,
+						Goal: &models.GoalData{
+							Action: ActionUpdate,
+							ID:     id,
+							Status: cns.StatusGoalEnded,
+						},
+					}),
+				},
+			},
+		},
 	}
 }
