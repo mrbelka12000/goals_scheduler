@@ -1,14 +1,17 @@
 package main
 
 import (
+	"database/sql"
 	"os"
 	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/yanzay/tbot/v2"
 
+	"goals_scheduler/internal/cns"
 	"goals_scheduler/internal/cronjobs"
 	"goals_scheduler/internal/delivery/bot"
+	"goals_scheduler/internal/models"
 	"goals_scheduler/internal/repo"
 	"goals_scheduler/internal/service"
 	"goals_scheduler/internal/usecase"
@@ -39,6 +42,10 @@ func main() {
 		log.Error().Err(err).Msg("connect to redis")
 		return
 	}
+	if err := doMigrates(db); err != nil {
+		log.Error().Err(err).Msg("do migrates")
+		return
+	}
 
 	rp := repo.New(db)
 	srv := service.New(rp)
@@ -54,5 +61,34 @@ func main() {
 		log.Error().Err(err).Msg("start bot")
 		return
 	}
+}
 
+func doMigrates(db *sql.DB) error {
+	rows, err := db.Query("SELECT id, status_id from goals")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		goal := models.Goal{}
+
+		err := rows.Scan(&goal.ID, &goal.Status)
+		if err != nil {
+			return err
+		}
+
+		if goal.Status == "Started" {
+			goal.Status = cns.StatusGoalStarted
+		}
+		if goal.Status == "Ended" {
+			goal.Status = cns.StatusGoalEnded
+		}
+
+		_, err = db.Exec(`update goals set status_id = $1 where id = $2`, goal.Status, goal.ID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
