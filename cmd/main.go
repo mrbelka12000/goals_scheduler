@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"os"
 	"time"
 
@@ -48,6 +49,17 @@ func main() {
 	app := bot.NewApp(telBot.Client(), uc, log)
 
 	go cronjobs.Start(app)
+
+	go func() {
+		//health check
+		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("ok"))
+		})
+		err := http.ListenAndServe(":"+cfg.HTTPPort, nil)
+		if err != nil {
+			log.Fatal().Err(err).Msg("start http")
+		}
+	}()
 
 	log.Info().Msg("Bot started")
 	if err := bot.Start(telBot, app); err != nil {

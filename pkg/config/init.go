@@ -17,6 +17,7 @@ type Config struct {
 	HttpPort       string `env:"HTTP_PORT, default=8080"`
 	ServiceName    string `env:"SERVICE_NAME,required"`
 	UseMigrates    bool   `env:"USE_MIGRATES,default=false"`
+	HTTPPort       string `env:"HTTP_PORT, default=5552"`
 }
 
 func Get() (Config, error) {
