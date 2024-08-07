@@ -118,34 +118,3 @@ func callbackDataBuilder(cbData models.CallbackData) string {
 	}
 	return string(jsonData)
 }
-
-func GetGoalActions(id int64) *tbot.InlineKeyboardMarkup {
-	return &tbot.InlineKeyboardMarkup{
-		InlineKeyboard: [][]tbot.InlineKeyboardButton{
-			{
-				{
-					Text: cns.StatusMapper(cns.StatusGoalFailed),
-					CallbackData: callbackDataBuilder(models.CallbackData{
-						Type: cns.TypeGoal,
-						Goal: &models.GoalData{
-							Action: ActionUpdate,
-							ID:     id,
-							Status: cns.StatusGoalFailed,
-						},
-					}),
-				},
-				{
-					Text: cns.StatusMapper(cns.StatusGoalEnded),
-					CallbackData: callbackDataBuilder(models.CallbackData{
-						Type: cns.TypeGoal,
-						Goal: &models.GoalData{
-							Action: ActionUpdate,
-							ID:     id,
-							Status: cns.StatusGoalEnded,
-						},
-					}),
-				},
-			},
-		},
-	}
-}

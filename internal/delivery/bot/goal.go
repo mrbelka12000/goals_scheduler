@@ -122,8 +122,8 @@ func (a *Application) handleCallbackGoal(cq *tbot.CallbackQuery, data *models.Go
 	return ""
 }
 
-func (a *Application) GetGoalEndChoose(id int64) *tbot.InlineKeyboardMarkup {
-	result := &tbot.InlineKeyboardMarkup{
+func GetGoalActions(id int64) *tbot.InlineKeyboardMarkup {
+	return &tbot.InlineKeyboardMarkup{
 		InlineKeyboard: [][]tbot.InlineKeyboardButton{
 			{
 				{
@@ -149,7 +149,17 @@ func (a *Application) GetGoalEndChoose(id int64) *tbot.InlineKeyboardMarkup {
 					}),
 				},
 			},
+			{
+				{
+					Text: "Отмена",
+					CallbackData: callbackDataBuilder(models.CallbackData{
+						Type: cns.TypeGoal,
+						Goal: &models.GoalData{
+							Action: "-",
+						},
+					}),
+				},
+			},
 		},
 	}
-	return result
 }
