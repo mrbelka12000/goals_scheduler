@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/yanzay/tbot/v2"
 
@@ -55,6 +56,10 @@ func main() {
 		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("ok"))
 		})
+
+		// metrics
+		http.Handle("/metrics", promhttp.Handler())
+
 		err := http.ListenAndServe(":"+cfg.HTTPPort, nil)
 		if err != nil {
 			log.Fatal().Err(err).Msg("start http")
