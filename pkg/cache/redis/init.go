@@ -16,7 +16,8 @@ type Cache struct {
 
 func New(cfg config.Config) (*Cache, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr: cfg.RedisAddr,
+		Addr:     cfg.RedisAddr,
+		Password: cfg.RedisPassword,
 	})
 
 	_, err := client.Ping().Result()
