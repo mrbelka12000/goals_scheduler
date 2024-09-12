@@ -10,6 +10,7 @@ import (
 
 	"goals_scheduler/internal/cns"
 	"goals_scheduler/internal/models"
+	"goals_scheduler/pkg/monitoring"
 )
 
 const (
@@ -103,6 +104,7 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 
 			_, err = uc.GoalCreate(context.Background(), goal)
 			if err != nil {
+				monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("create goal: %w", err).Error())
 				uc.log.Err(err).Msg("goal create")
 				return cns.SomethingWentWrong, ""
 			}
@@ -111,8 +113,6 @@ func (uc *UseCase) handleStates(msg models.Message, state string) (string, strin
 		// delete states
 		for _, k := range cns.KeysToGoal {
 			key := fmt.Sprintf("%v:%v", k, msg.UserID)
-			val, _ := uc.cache.Get(key)
-			mp[k] = val
 			uc.cache.Delete(key)
 		}
 

@@ -8,6 +8,7 @@ import (
 	"github.com/go-redis/redis"
 
 	"goals_scheduler/pkg/config"
+	"goals_scheduler/pkg/monitoring"
 )
 
 type Cache struct {
@@ -31,12 +32,18 @@ func New(cfg config.Config) (*Cache, error) {
 }
 
 func (c *Cache) Set(key string, value interface{}, dur time.Duration) error {
-	return c.store.Set(key, value, dur).Err()
+	err := c.store.Set(key, value, dur).Err()
+	if err != nil {
+		monitoring.Writer.Incr(monitoring.LabelRedis, fmt.Errorf("set in redis: %w", err).Error())
+		return fmt.Errorf("set: %w", err)
+	}
+	return nil
 }
 
 func (c *Cache) Get(key string) (string, bool) {
 	value, err := c.store.Get(key).Result()
 	if err != nil {
+		monitoring.Writer.Incr(monitoring.LabelRedis, fmt.Errorf("get from redis: %w", err).Error())
 		return "", false
 	}
 

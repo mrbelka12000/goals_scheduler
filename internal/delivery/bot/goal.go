@@ -9,6 +9,7 @@ import (
 
 	"goals_scheduler/internal/cns"
 	"goals_scheduler/internal/models"
+	"goals_scheduler/pkg/monitoring"
 )
 
 const (
@@ -20,6 +21,7 @@ const (
 func (a *Application) deleteGoal(m *tbot.Message) {
 	list, _, err := a.Uc.GoalList(context.Background(), models.GoalPars{UsrID: pointer.ToInt(m.From.ID)})
 	if err != nil {
+		monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("get goals list: %w", err).Error())
 		a.Client.SendMessage(m.Chat.ID, cns.SomethingWentWrong)
 		a.Log.Err(err).Msg("get goals list")
 		return
@@ -39,6 +41,7 @@ func (a *Application) deleteGoal(m *tbot.Message) {
 func (a *Application) deleteUsersGoals(m *tbot.Message) {
 	err := a.Uc.GoalDeleteAllOfUsers(context.Background(), m.From.ID)
 	if err != nil {
+		monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("delete user`s goals: %w", err).Error())
 		a.Log.Err(err).Msg("delete user`s goals")
 		a.Client.SendMessage(m.Chat.ID, cns.SomethingWentWrong)
 		return
@@ -59,6 +62,7 @@ func (a *Application) handleCreateGoal(m *tbot.Message) {
 func (a *Application) handleGetGoals(m *tbot.Message) {
 	list, _, err := a.Uc.GoalList(context.Background(), models.GoalPars{UsrID: pointer.ToInt(m.From.ID)})
 	if err != nil {
+		monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("get goals list: %w", err).Error())
 		a.Client.SendMessage(m.Chat.ID, cns.SomethingWentWrong)
 		a.Log.Err(err).Msg("get goals list")
 		return
@@ -88,6 +92,7 @@ func (a *Application) handleCallbackGoal(cq *tbot.CallbackQuery, data *models.Go
 			data.ID,
 		)
 		if err != nil {
+			monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("delete goal: %w", err).Error())
 			a.Log.Err(err).Msg("delete goal by id")
 			return cns.SomethingWentWrong
 		}
@@ -104,6 +109,7 @@ func (a *Application) handleCallbackGoal(cq *tbot.CallbackQuery, data *models.Go
 			data.ID,
 		)
 		if err != nil {
+			monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("update goal: %w", err).Error())
 			a.Log.Err(err).Msg("update goal by id")
 			return cns.SomethingWentWrong
 		}
@@ -113,6 +119,7 @@ func (a *Application) handleCallbackGoal(cq *tbot.CallbackQuery, data *models.Go
 	case ActionSelect:
 		goal, err := a.Uc.GoalGet(context.Background(), data.ID)
 		if err != nil {
+			monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("get goal by id: %w", err).Error())
 			return cns.SomethingWentWrong
 		}
 

@@ -94,7 +94,6 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 			})
 		}
 	}
-	fmt.Println(msg)
 
 	msgData := strings.Split(msg, "|")
 	if len(msgData) == 2 {
