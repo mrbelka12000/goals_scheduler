@@ -31,6 +31,6 @@ func (uc *UseCase) GoalUpdate(ctx context.Context, obj models.GoalCU, id int64) 
 	return uc.srv.Goal.Update(ctx, obj, id)
 }
 
-func (us *UseCase) GoalDelete(ctx context.Context, id int64) error {
-	return us.srv.Goal.Delete(ctx, id)
+func (uc *UseCase) GoalDelete(ctx context.Context, id int64) error {
+	return uc.srv.Goal.Delete(ctx, id)
 }
