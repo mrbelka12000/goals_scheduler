@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"goals_scheduler/pkg/config"
+	"github.com/mrbelka12000/goals_scheduler/pkg/config"
 )
 
 type Server struct {

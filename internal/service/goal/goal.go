@@ -7,8 +7,8 @@ import (
 
 	"github.com/AlekSi/pointer"
 
-	"goals_scheduler/internal/cns"
-	"goals_scheduler/internal/models"
+	gs "github.com/mrbelka12000/goals_scheduler"
+	"github.com/mrbelka12000/goals_scheduler/internal/models"
 )
 
 type Goal struct {
@@ -22,7 +22,7 @@ func NewGoal(repo repo) *Goal {
 }
 
 func (g *Goal) Create(ctx context.Context, obj *models.GoalCU) (int64, error) {
-	obj.Status = pointer.To(cns.StatusGoalStarted)
+	obj.Status = pointer.To(gs.StatusGoalStarted)
 	if obj.Timer == nil {
 		obj.Timer = pointer.ToDuration(365 * 24 * time.Hour)
 	}

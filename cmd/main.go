@@ -9,14 +9,14 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/yanzay/tbot/v2"
 
-	"goals_scheduler/internal/cronjobs"
-	"goals_scheduler/internal/delivery/bot"
-	"goals_scheduler/internal/repo"
-	"goals_scheduler/internal/service"
-	"goals_scheduler/internal/usecase"
-	"goals_scheduler/pkg/cache/redis"
-	"goals_scheduler/pkg/config"
-	"goals_scheduler/pkg/database"
+	"github.com/mrbelka12000/goals_scheduler/internal"
+	"github.com/mrbelka12000/goals_scheduler/internal/delivery/bot"
+	"github.com/mrbelka12000/goals_scheduler/internal/repo"
+	"github.com/mrbelka12000/goals_scheduler/internal/service"
+	"github.com/mrbelka12000/goals_scheduler/internal/usecase"
+	"github.com/mrbelka12000/goals_scheduler/pkg/cache/redis"
+	"github.com/mrbelka12000/goals_scheduler/pkg/config"
+	"github.com/mrbelka12000/goals_scheduler/pkg/database"
 )
 
 func main() {
@@ -45,11 +45,10 @@ func main() {
 	rp := repo.New(db)
 	srv := service.New(rp)
 	uc := usecase.New(log, srv, cache)
-
 	telBot := tbot.New(cfg.TelegramToken)
 	app := bot.NewApp(telBot.Client(), uc, log)
-
-	go cronjobs.Start(app)
+	cron := internal.NewCron(telBot.Client(), uc, log)
+	go cron.Start()
 
 	go func() {
 		//health check

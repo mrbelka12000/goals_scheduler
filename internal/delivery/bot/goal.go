@@ -7,9 +7,8 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/yanzay/tbot/v2"
 
-	"goals_scheduler/internal/cns"
-	"goals_scheduler/internal/models"
-	"goals_scheduler/pkg/monitoring"
+	gs "github.com/mrbelka12000/goals_scheduler"
+	"github.com/mrbelka12000/goals_scheduler/internal/models"
 )
 
 const (
@@ -19,61 +18,58 @@ const (
 )
 
 func (a *Application) deleteGoal(m *tbot.Message) {
-	list, _, err := a.Uc.GoalList(context.Background(), models.GoalPars{UsrID: pointer.ToInt(m.From.ID)})
+	list, _, err := a.uc.GoalList(context.Background(), models.GoalPars{UsrID: pointer.ToInt(m.From.ID)})
 	if err != nil {
-		monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("get goals list: %w", err).Error())
-		a.Client.SendMessage(m.Chat.ID, cns.SomethingWentWrong)
-		a.Log.Err(err).Msg("get goals list")
+		a.client.SendMessage(m.Chat.ID, gs.SomethingWentWrong)
+		a.log.Err(err).Msg("get goals list")
 		return
 	}
 
 	if len(list) == 0 {
-		a.Client.SendMessage(m.Chat.ID, "Пока что у вас нет целей")
+		a.client.SendMessage(m.Chat.ID, "Пока что у вас нет целей")
 		return
 	}
 
-	a.Client.SendMessage(
+	a.client.SendMessage(
 		m.Chat.ID,
 		"Выберите цель для удаления",
 		tbot.OptInlineKeyboardMarkup(generateGoalBottons(list, true, ActionDelete, "-")))
 }
 
 func (a *Application) deleteUsersGoals(m *tbot.Message) {
-	err := a.Uc.GoalDeleteAllOfUsers(context.Background(), m.From.ID)
+	err := a.uc.GoalDeleteAllOfUsers(context.Background(), m.From.ID)
 	if err != nil {
-		monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("delete user`s goals: %w", err).Error())
-		a.Log.Err(err).Msg("delete user`s goals")
-		a.Client.SendMessage(m.Chat.ID, cns.SomethingWentWrong)
+		a.log.Err(err).Msg("delete user`s goals")
+		a.client.SendMessage(m.Chat.ID, gs.SomethingWentWrong)
 		return
 	}
 
-	a.Client.SendMessage(m.Chat.ID, "Все удалено")
+	a.client.SendMessage(m.Chat.ID, "Все удалено")
 }
 
 func (a *Application) handleCreateGoal(m *tbot.Message) {
-	msg := a.Uc.StartGoal(models.Message{
+	msg := a.uc.StartGoal(models.Message{
 		UserID: m.From.ID,
 		Text:   m.Text,
 	})
 
-	a.Client.SendMessage(m.Chat.ID, msg)
+	a.client.SendMessage(m.Chat.ID, msg)
 }
 
 func (a *Application) handleGetGoals(m *tbot.Message) {
-	list, _, err := a.Uc.GoalList(context.Background(), models.GoalPars{UsrID: pointer.ToInt(m.From.ID)})
+	list, _, err := a.uc.GoalList(context.Background(), models.GoalPars{UsrID: pointer.ToInt(m.From.ID)})
 	if err != nil {
-		monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("get goals list: %w", err).Error())
-		a.Client.SendMessage(m.Chat.ID, cns.SomethingWentWrong)
-		a.Log.Err(err).Msg("get goals list")
+		a.client.SendMessage(m.Chat.ID, gs.SomethingWentWrong)
+		a.log.Err(err).Msg("get goals list")
 		return
 	}
 
 	if len(list) == 0 {
-		a.Client.SendMessage(m.Chat.ID, "Пока что у вас нет целей")
+		a.client.SendMessage(m.Chat.ID, "Пока что у вас нет целей")
 		return
 	}
 
-	a.Client.SendMessage(
+	a.client.SendMessage(
 		m.Chat.ID,
 		"Цели",
 		tbot.OptInlineKeyboardMarkup(generateGoalBottons(list, true, ActionSelect, "-")))
@@ -81,27 +77,26 @@ func (a *Application) handleGetGoals(m *tbot.Message) {
 
 func (a *Application) handleCallbackGoal(cq *tbot.CallbackQuery, data *models.GoalData) string {
 	if data.Action == "-" {
-		a.Client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
+		a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 		return ""
 	}
 
 	switch data.Action {
 	case ActionDelete:
-		err := a.Uc.GoalDelete(
+		err := a.uc.GoalDelete(
 			context.Background(),
 			data.ID,
 		)
 		if err != nil {
-			monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("delete goal: %w", err).Error())
-			a.Log.Err(err).Msg("delete goal by id")
-			return cns.SomethingWentWrong
+			a.log.Err(err).Msg("delete goal by id")
+			return gs.SomethingWentWrong
 		}
 
-		a.Client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
+		a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 
 		return "Цель удалена"
 	case ActionUpdate:
-		err := a.Uc.GoalUpdate(
+		err := a.uc.GoalUpdate(
 			context.Background(),
 			models.GoalCU{
 				Status: &data.Status,
@@ -109,18 +104,16 @@ func (a *Application) handleCallbackGoal(cq *tbot.CallbackQuery, data *models.Go
 			data.ID,
 		)
 		if err != nil {
-			monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("update goal: %w", err).Error())
-			a.Log.Err(err).Msg("update goal by id")
-			return cns.SomethingWentWrong
+			a.log.Err(err).Msg("update goal by id")
+			return gs.SomethingWentWrong
 		}
 
-		a.Client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
+		a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 		return "Цель обновлена"
 	case ActionSelect:
-		goal, err := a.Uc.GoalGet(context.Background(), data.ID)
+		goal, err := a.uc.GoalGet(context.Background(), data.ID)
 		if err != nil {
-			monitoring.Writer.Incr(monitoring.LabelPostgres, fmt.Errorf("get goal by id: %w", err).Error())
-			return cns.SomethingWentWrong
+			return gs.SomethingWentWrong
 		}
 
 		return fmt.Sprintf("%v|%v", "SelectGoal", goal.Text)
@@ -134,24 +127,24 @@ func GetGoalActions(id int64) *tbot.InlineKeyboardMarkup {
 		InlineKeyboard: [][]tbot.InlineKeyboardButton{
 			{
 				{
-					Text: cns.StatusMapper(cns.StatusGoalFailed),
+					Text: gs.StatusMapper(gs.StatusGoalFailed),
 					CallbackData: callbackDataBuilder(models.CallbackData{
-						Type: cns.TypeGoal,
+						Type: gs.CallbackTypeGoal,
 						Goal: &models.GoalData{
 							ID:     id,
 							Action: ActionUpdate,
-							Status: cns.StatusGoalFailed,
+							Status: gs.StatusGoalFailed,
 						},
 					}),
 				},
 				{
-					Text: cns.StatusMapper(cns.StatusGoalEnded),
+					Text: gs.StatusMapper(gs.StatusGoalEnded),
 					CallbackData: callbackDataBuilder(models.CallbackData{
-						Type: cns.TypeGoal,
+						Type: gs.CallbackTypeGoal,
 						Goal: &models.GoalData{
 							ID:     id,
 							Action: ActionUpdate,
-							Status: cns.StatusGoalEnded,
+							Status: gs.StatusGoalEnded,
 						},
 					}),
 				},
@@ -160,7 +153,7 @@ func GetGoalActions(id int64) *tbot.InlineKeyboardMarkup {
 				{
 					Text: "Отмена",
 					CallbackData: callbackDataBuilder(models.CallbackData{
-						Type: cns.TypeGoal,
+						Type: gs.CallbackTypeGoal,
 						Goal: &models.GoalData{
 							Action: "-",
 						},

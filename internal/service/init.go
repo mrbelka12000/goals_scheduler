@@ -1,8 +1,8 @@
 package service
 
 import (
-	"goals_scheduler/internal/repo"
-	goalservice "goals_scheduler/internal/service/goal"
+	"github.com/mrbelka12000/goals_scheduler/internal/repo"
+	goalservice "github.com/mrbelka12000/goals_scheduler/internal/service/goal"
 )
 
 type Service struct {

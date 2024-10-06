@@ -3,7 +3,7 @@ package goal
 import (
 	"context"
 
-	"goals_scheduler/internal/models"
+	"github.com/mrbelka12000/goals_scheduler/internal/models"
 )
 
 type repo interface {

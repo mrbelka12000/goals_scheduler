@@ -1,6 +1,8 @@
 package models
 
-import "goals_scheduler/internal/cns"
+import (
+	gs "github.com/mrbelka12000/goals_scheduler"
+)
 
 type (
 	Message struct {
@@ -10,9 +12,10 @@ type (
 	}
 
 	CallbackData struct {
-		Type     string        `json:"type,omitempty"` // goal or calendar
-		Calendar *CalendarData `json:"calendar,omitempty"`
-		Goal     *GoalData     `json:"goal,omitempty"`
+		Type       gs.CallbackType `json:"type,omitempty"` // goal or calendar
+		Calendar   *CalendarData   `json:"calendar,omitempty"`
+		Goal       *GoalData       `json:"goal,omitempty"`
+		GoalCreate *GoalCreateData `json:"goal_create,omitempty"`
 	}
 
 	CalendarData struct {
@@ -21,8 +24,14 @@ type (
 	}
 
 	GoalData struct {
-		Action string         `json:"action,omitempty"` // delete, update goal
-		ID     int64          `json:"id,omitempty"`     // id of goal
-		Status cns.StatusGoal `json:"status,omitempty"` // status to update
+		Action string        `json:"action,omitempty"` // delete, update goal
+		ID     int64         `json:"id,omitempty"`     // id of goal
+		Status gs.StatusGoal `json:"status,omitempty"` // status to update
+	}
+
+	GoalCreateData struct {
+		Action string `json:"action,omitempty"`
+		ID     int64  `json:"id,omitempty"`
+		Method string `json:"method,omitempty"`
 	}
 )

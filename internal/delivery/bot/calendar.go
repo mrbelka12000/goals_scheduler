@@ -9,8 +9,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/yanzay/tbot/v2"
 
-	"goals_scheduler/internal/cns"
-	"goals_scheduler/internal/models"
+	gs "github.com/mrbelka12000/goals_scheduler"
+	"github.com/mrbelka12000/goals_scheduler/internal/models"
 )
 
 const (
@@ -172,7 +172,7 @@ func generateMonth(year int, month int) [][]tbot.InlineKeyboardButton {
 		rowDays = append(rowDays, tbot.InlineKeyboardButton{
 			Text: btnText,
 			CallbackData: callbackDataBuilder(models.CallbackData{
-				Type: cns.TypeCalendar,
+				Type: gs.CallbackTypeCalendar,
 				Calendar: &models.CalendarData{
 					Data: fmt.Sprintf("%v-%v-%v", year, monthStr, day),
 				},
@@ -198,13 +198,13 @@ func date(year, month, day int) time.Time {
 func addSpecialButtons() []tbot.InlineKeyboardButton {
 	var rowDays []tbot.InlineKeyboardButton
 	btnPrev := tbot.InlineKeyboardButton{Text: BTN_PREV, CallbackData: callbackDataBuilder(models.CallbackData{
-		Type: cns.TypeCalendar,
+		Type: gs.CallbackTypeCalendar,
 		Calendar: &models.CalendarData{
 			Action: BTN_PREV,
 		},
 	})}
 	btnNext := tbot.InlineKeyboardButton{Text: BTN_NEXT, CallbackData: callbackDataBuilder(models.CallbackData{
-		Type: cns.TypeCalendar,
+		Type: gs.CallbackTypeCalendar,
 		Calendar: &models.CalendarData{
 			Action: BTN_NEXT,
 		},

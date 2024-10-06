@@ -8,24 +8,24 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/yanzay/tbot/v2"
 
-	"goals_scheduler/internal/cns"
-	"goals_scheduler/internal/models"
-	"goals_scheduler/internal/usecase"
+	gs "github.com/mrbelka12000/goals_scheduler"
+	"github.com/mrbelka12000/goals_scheduler/internal/models"
+	"github.com/mrbelka12000/goals_scheduler/internal/usecase"
 )
 
 type Application struct {
-	Client   *tbot.Client
-	Uc       *usecase.UseCase
-	Log      zerolog.Logger
+	client   *tbot.Client
+	uc       *usecase.UseCase
+	log      zerolog.Logger
 	calendar *calendar
 }
 
 func NewApp(client *tbot.Client, uc *usecase.UseCase, log zerolog.Logger) *Application {
 	return &Application{
-		Client:   client,
+		client:   client,
 		calendar: newCalendar(client, log),
-		Uc:       uc,
-		Log:      log,
+		uc:       uc,
+		log:      log,
 	}
 }
 
@@ -45,11 +45,11 @@ func Start(bot *tbot.Server, app *Application) error {
 }
 
 func (a *Application) handleStart(m *tbot.Message) {
-	a.Client.SendMessage(m.Chat.ID, fmt.Sprintf("Привет %v", m.From.Username))
+	a.client.SendMessage(m.Chat.ID, fmt.Sprintf("Привет %v", m.From.Username))
 }
 
 func (a *Application) handleAllMessages(m *tbot.Message) {
-	msg, state := a.Uc.HandleMessage(models.Message{
+	msg, state := a.uc.HandleMessage(models.Message{
 		UserID: m.From.ID,
 		ChatID: m.Chat.ID,
 		Text:   m.Text,
@@ -59,12 +59,14 @@ func (a *Application) handleAllMessages(m *tbot.Message) {
 		return
 	}
 
-	if state == cns.MessageStateDeadline {
+	switch state {
+	case gs.MessageStateDeadline:
 		a.calendar.calendarHandler(m)
-		return
-	}
+	case gs.MessageStateChoseMethod:
 
-	a.Client.SendMessage(m.Chat.ID, msg)
+	default:
+		a.client.SendMessage(m.Chat.ID, msg)
+	}
 }
 
 func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
@@ -76,19 +78,21 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 	cbData := models.CallbackData{}
 	err := json.Unmarshal([]byte(data), &cbData)
 	if err != nil {
-		a.Log.Err(err).Msg("failed to unmarshal callback data")
+		a.log.Err(err).Msg("failed to unmarshal callback data")
 		return
 	}
 
 	var msg string
 
 	switch cbData.Type {
-	case cns.TypeGoal:
+	case gs.CallbackTypeGoal:
 		msg = a.handleCallbackGoal(cq, cbData.Goal)
-	case cns.TypeCalendar:
+	case gs.CallbackTypeCalendar:
 		msg = a.calendar.handleCallback(cq, cbData.Calendar)
+		fmt.Println(msg)
+		fmt.Printf("%+v\n", cbData.Calendar)
 		if cbData.Calendar != nil && cbData.Calendar.Data != "" {
-			msg, _ = a.Uc.HandleMessage(models.Message{
+			msg, _ = a.uc.HandleMessage(models.Message{
 				UserID: cq.From.ID,
 				Text:   cbData.Calendar.Data,
 			})
@@ -97,7 +101,7 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 
 	msgData := strings.Split(msg, "|")
 	if len(msgData) == 2 {
-		a.Client.SendMessage(
+		a.client.SendMessage(
 			cq.Message.Chat.ID,
 			fmt.Sprintf("Цель: %v", msgData[1]),
 			tbot.OptInlineKeyboardMarkup(GetGoalActions(cbData.Goal.ID)),
@@ -106,7 +110,7 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 	}
 
 	if msg != "" {
-		a.Client.SendMessage(cq.Message.Chat.ID, msg)
+		a.client.SendMessage(cq.Message.Chat.ID, msg)
 	}
 }
 

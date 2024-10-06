@@ -7,8 +7,7 @@ import (
 
 	"github.com/go-redis/redis"
 
-	"goals_scheduler/pkg/config"
-	"goals_scheduler/pkg/monitoring"
+	"github.com/mrbelka12000/goals_scheduler/pkg/config"
 )
 
 type Cache struct {
@@ -17,8 +16,10 @@ type Cache struct {
 
 func New(cfg config.Config) (*Cache, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPassword,
+		Addr:         cfg.RedisAddr,
+		Password:     cfg.RedisPassword,
+		ReadTimeout:  2 * time.Second,
+		WriteTimeout: 2 * time.Second,
 	})
 
 	_, err := client.Ping().Result()
@@ -34,7 +35,6 @@ func New(cfg config.Config) (*Cache, error) {
 func (c *Cache) Set(key string, value interface{}, dur time.Duration) error {
 	err := c.store.Set(key, value, dur).Err()
 	if err != nil {
-		monitoring.Writer.Incr(monitoring.LabelRedis, fmt.Errorf("set in redis: %w", err).Error())
 		return fmt.Errorf("set: %w", err)
 	}
 	return nil
@@ -43,7 +43,6 @@ func (c *Cache) Set(key string, value interface{}, dur time.Duration) error {
 func (c *Cache) Get(key string) (string, bool) {
 	value, err := c.store.Get(key).Result()
 	if err != nil {
-		monitoring.Writer.Incr(monitoring.LabelRedis, fmt.Errorf("get from redis: %w", err).Error())
 		return "", false
 	}
 

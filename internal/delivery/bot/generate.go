@@ -5,14 +5,14 @@ import (
 
 	"github.com/yanzay/tbot/v2"
 
-	"goals_scheduler/internal/cns"
-	"goals_scheduler/internal/models"
+	gs "github.com/mrbelka12000/goals_scheduler"
+	"github.com/mrbelka12000/goals_scheduler/internal/models"
 )
 
-func generateGoalBottons(list []models.Goal, useCallback bool, action string, status cns.StatusGoal) *tbot.InlineKeyboardMarkup {
+func generateGoalBottons(list []models.Goal, useCallback bool, action string, status gs.StatusGoal) *tbot.InlineKeyboardMarkup {
 	val := &tbot.InlineKeyboardMarkup{}
 	callbackData := callbackDataBuilder(models.CallbackData{
-		Type: cns.TypeGoal,
+		Type: gs.CallbackTypeGoal,
 		Goal: &models.GoalData{
 			Action: "-",
 		},
@@ -22,7 +22,7 @@ func generateGoalBottons(list []models.Goal, useCallback bool, action string, st
 		var row []tbot.InlineKeyboardButton
 		if useCallback {
 			callbackData = callbackDataBuilder(models.CallbackData{
-				Type: cns.TypeGoal,
+				Type: gs.CallbackTypeGoal,
 				Goal: &models.GoalData{
 					Action: action,
 					ID:     l.ID,
@@ -32,7 +32,7 @@ func generateGoalBottons(list []models.Goal, useCallback bool, action string, st
 		}
 
 		row = append(row, tbot.InlineKeyboardButton{
-			Text:         fmt.Sprintf("%v   |   %v  |   %v", l.Text, l.Deadline.Format(cns.DateFormat), cns.StatusMapper(l.Status)),
+			Text:         fmt.Sprintf("%v   |   %v  |   %v", l.Text, l.Deadline.Format(gs.DateFormat), gs.StatusMapper(l.Status)),
 			CallbackData: callbackData,
 		})
 
@@ -44,7 +44,7 @@ func generateGoalBottons(list []models.Goal, useCallback bool, action string, st
 			{
 				Text: "Отмена",
 				CallbackData: callbackDataBuilder(models.CallbackData{
-					Type: cns.TypeGoal,
+					Type: gs.CallbackTypeGoal,
 					Goal: &models.GoalData{
 						Action: "-",
 					},

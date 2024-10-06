@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"goals_scheduler/internal/models"
+	"github.com/mrbelka12000/goals_scheduler/internal/models"
 )
 
 type goal struct {

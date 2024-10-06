@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 
-	"goals_scheduler/internal/models"
+	"github.com/mrbelka12000/goals_scheduler/internal/models"
 )
 
 func (uc *UseCase) GoalCreate(ctx context.Context, obj models.GoalCU) (int64, error) {

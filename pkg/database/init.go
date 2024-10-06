@@ -8,7 +8,7 @@ import (
 
 	_ "github.com/lib/pq"
 
-	"goals_scheduler/pkg/config"
+	"github.com/mrbelka12000/goals_scheduler/pkg/config"
 )
 
 // Connect ..
