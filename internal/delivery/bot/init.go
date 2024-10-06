@@ -62,8 +62,6 @@ func (a *Application) handleAllMessages(m *tbot.Message) {
 	switch state {
 	case gs.MessageStateDeadline:
 		a.calendar.calendarHandler(m)
-	case gs.MessageStateChoseMethod:
-
 	default:
 		a.client.SendMessage(m.Chat.ID, msg)
 	}
@@ -89,24 +87,31 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 		msg = a.handleCallbackGoal(cq, cbData.Goal)
 	case gs.CallbackTypeCalendar:
 		msg = a.calendar.handleCallback(cq, cbData.Calendar)
-		fmt.Println(msg)
-		fmt.Printf("%+v\n", cbData.Calendar)
 		if cbData.Calendar != nil && cbData.Calendar.Data != "" {
 			msg, _ = a.uc.HandleMessage(models.Message{
 				UserID: cq.From.ID,
 				Text:   cbData.Calendar.Data,
 			})
+
+			a.client.SendMessage(cq.Message.Chat.ID, "Выберите метод:", tbot.OptInlineKeyboardMarkup(a.GetGoalCreateActions()))
+
+			return
 		}
+	case gs.CallbackTypeGoalCreate:
+		msg = a.handleGoalCreate(cq, cbData.GoalCreate)
 	}
 
-	msgData := strings.Split(msg, "|")
-	if len(msgData) == 2 {
-		a.client.SendMessage(
-			cq.Message.Chat.ID,
-			fmt.Sprintf("Цель: %v", msgData[1]),
-			tbot.OptInlineKeyboardMarkup(GetGoalActions(cbData.Goal.ID)),
-		)
-		return
+	// only for CallbackTypeGoal
+	{
+		msgData := strings.Split(msg, "|")
+		if len(msgData) == 2 {
+			a.client.SendMessage(
+				cq.Message.Chat.ID,
+				fmt.Sprintf("Цель: %v", msgData[1]),
+				tbot.OptInlineKeyboardMarkup(GetGoalActions(cbData.Goal.ID)),
+			)
+			return
+		}
 	}
 
 	if msg != "" {

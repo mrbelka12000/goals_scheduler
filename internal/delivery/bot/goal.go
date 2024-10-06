@@ -12,9 +12,12 @@ import (
 )
 
 const (
-	ActionDelete = "delete"
-	ActionUpdate = "update"
-	ActionSelect = "select"
+	ActionGoalDelete = "delete"
+	ActionGoalUpdate = "update"
+	ActionGoalSelect = "select"
+
+	ActionGoalCreateTimer  = "timer"
+	ActionGoalCreateNotify = "notify"
 )
 
 func (a *Application) deleteGoal(m *tbot.Message) {
@@ -33,7 +36,7 @@ func (a *Application) deleteGoal(m *tbot.Message) {
 	a.client.SendMessage(
 		m.Chat.ID,
 		"Выберите цель для удаления",
-		tbot.OptInlineKeyboardMarkup(generateGoalBottons(list, true, ActionDelete, "-")))
+		tbot.OptInlineKeyboardMarkup(generateGoalBottons(list, true, ActionGoalDelete, "-")))
 }
 
 func (a *Application) deleteUsersGoals(m *tbot.Message) {
@@ -72,7 +75,7 @@ func (a *Application) handleGetGoals(m *tbot.Message) {
 	a.client.SendMessage(
 		m.Chat.ID,
 		"Цели",
-		tbot.OptInlineKeyboardMarkup(generateGoalBottons(list, true, ActionSelect, "-")))
+		tbot.OptInlineKeyboardMarkup(generateGoalBottons(list, true, ActionGoalSelect, "-")))
 }
 
 func (a *Application) handleCallbackGoal(cq *tbot.CallbackQuery, data *models.GoalData) string {
@@ -82,7 +85,7 @@ func (a *Application) handleCallbackGoal(cq *tbot.CallbackQuery, data *models.Go
 	}
 
 	switch data.Action {
-	case ActionDelete:
+	case ActionGoalDelete:
 		err := a.uc.GoalDelete(
 			context.Background(),
 			data.ID,
@@ -95,7 +98,7 @@ func (a *Application) handleCallbackGoal(cq *tbot.CallbackQuery, data *models.Go
 		a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 
 		return "Цель удалена"
-	case ActionUpdate:
+	case ActionGoalUpdate:
 		err := a.uc.GoalUpdate(
 			context.Background(),
 			models.GoalCU{
@@ -110,7 +113,7 @@ func (a *Application) handleCallbackGoal(cq *tbot.CallbackQuery, data *models.Go
 
 		a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 		return "Цель обновлена"
-	case ActionSelect:
+	case ActionGoalSelect:
 		goal, err := a.uc.GoalGet(context.Background(), data.ID)
 		if err != nil {
 			return gs.SomethingWentWrong
@@ -132,7 +135,7 @@ func GetGoalActions(id int64) *tbot.InlineKeyboardMarkup {
 						Type: gs.CallbackTypeGoal,
 						Goal: &models.GoalData{
 							ID:     id,
-							Action: ActionUpdate,
+							Action: ActionGoalUpdate,
 							Status: gs.StatusGoalFailed,
 						},
 					}),
@@ -143,7 +146,7 @@ func GetGoalActions(id int64) *tbot.InlineKeyboardMarkup {
 						Type: gs.CallbackTypeGoal,
 						Goal: &models.GoalData{
 							ID:     id,
-							Action: ActionUpdate,
+							Action: ActionGoalUpdate,
 							Status: gs.StatusGoalEnded,
 						},
 					}),
@@ -162,4 +165,77 @@ func GetGoalActions(id int64) *tbot.InlineKeyboardMarkup {
 			},
 		},
 	}
+}
+
+func (a *Application) handleGoalCreate(cq *tbot.CallbackQuery, data *models.GoalCreateData) string {
+	a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
+	switch data.Action {
+	case ActionGoalCreateTimer:
+		err := a.uc.ChooseMethod(cq.From.ID, gs.MessageStateTimer, gs.KeyTimer)
+		if err != nil {
+			a.log.Err(err).Msg("choose method")
+			return gs.SomethingWentWrong
+		}
+
+		return gs.MessageTimerFormat
+
+	case ActionGoalCreateNotify:
+		err := a.uc.ChooseMethod(cq.From.ID, gs.MessageStateTime, gs.KeyNotify)
+		if err != nil {
+			a.log.Err(err).Msg("choose method")
+			return gs.SomethingWentWrong
+		}
+
+		return gs.MessageTimeFromat
+
+	case "-":
+		err := a.uc.BuildGoal(cq.From.ID, cq.Message.Chat.ID)
+		if err != nil {
+			a.log.Err(err).Msg("create goal")
+			return gs.SomethingWentWrong
+		}
+
+		return gs.MessageDone
+	}
+
+	return ""
+}
+
+func (a *Application) GetGoalCreateActions() *tbot.InlineKeyboardMarkup {
+	return &tbot.InlineKeyboardMarkup{
+		InlineKeyboard: [][]tbot.InlineKeyboardButton{
+			{
+				{
+					Text: "Уведомления",
+					CallbackData: callbackDataBuilder(models.CallbackData{
+						Type: gs.CallbackTypeGoalCreate,
+						GoalCreate: &models.GoalCreateData{
+							Action: ActionGoalCreateNotify,
+						},
+					}),
+				},
+				{
+					Text: "Таймер",
+					CallbackData: callbackDataBuilder(models.CallbackData{
+						Type: gs.CallbackTypeGoalCreate,
+						GoalCreate: &models.GoalCreateData{
+							Action: ActionGoalCreateTimer,
+						},
+					}),
+				},
+			},
+			{
+				{
+					Text: "Не напоминать",
+					CallbackData: callbackDataBuilder(models.CallbackData{
+						Type: gs.CallbackTypeGoalCreate,
+						GoalCreate: &models.GoalCreateData{
+							Action: "-",
+						},
+					}),
+				},
+			},
+		},
+	}
+
 }

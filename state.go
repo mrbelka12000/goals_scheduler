@@ -12,6 +12,7 @@ const (
 	MessageStateDeadline    State = "waiting_for_deadline"
 	MessageStateChoseMethod State = "waiting_for_method"
 	MessageStateTimer       State = "waiting_for_timer"
-	MessageStateNotify      State = "waiting_for_notify"
+	MessageStateTime        State = "waiting_for_time"
+	MessageStateDay         State = "waiting_for_day"
 	MessageStateDone        State = "done"
 )

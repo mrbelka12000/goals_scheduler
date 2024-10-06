@@ -1,10 +1,14 @@
 package goals_scheduler
 
 const (
-	DateFormat         = "2006-01-02"
+	DateFormat = "2006-01-02"
+
 	SomethingWentWrong = "Что то пошло не так"
-	TimerFormat        = `
-		Введите время для напоминания
-Допустимые единицы времени: "ns", "us" (или "µs"), "ms", "s", "m", "h".
-Отправьте - , в случае если не нужно напоминать`
+	MessageTimerFormat = `
+		Введите интервал для напоминания
+Допустимые единицы времени: "s", "m", "h". Ex: 5h = каждые 5 часов`
+	MessageTimeFromat = `
+		Укажите время для напоминание
+Формат hour:minute . Ex: 14:58`
+	MessageDone = "Цель сохранилась"
 )

@@ -10,10 +10,13 @@ type schema struct {
 	msg       string
 
 	isStart            bool
-	waitingForText     bool
-	waitingForDeadline bool
-	waitingForNotify   bool
-	waitingForTimer    bool
+	isFinal            bool
+	waitingForText     bool // text of goal
+	waitingForDeadline bool // date 15-02-2002
+	waitingForTime     bool // time 15:13, 23:55...
+	waitingForTimer    bool // timer 5s, 10h...
+	waitingForDay      bool // weekday Monday, Tuesday...
+	needInput          bool // need text from user or not
 }
 
 func initSchema() []schema {
@@ -28,27 +31,37 @@ func initSchema() []schema {
 			state:          gs.MessageStateText,
 			nextState:      gs.MessageStateDeadline,
 			msg:            "Введите крайний срок для цели",
+			needInput:      true,
 			waitingForText: true,
 		},
 		{
 			state:              gs.MessageStateDeadline,
 			nextState:          gs.MessageStateChoseMethod,
+			needInput:          true,
 			waitingForDeadline: true,
 		},
 		{
 			state: gs.MessageStateChoseMethod,
 		},
 		{
-			state:            gs.MessageStateNotify,
-			nextState:        gs.MessageStateDone,
-			msg:              "Цель сохранилась",
-			waitingForNotify: true,
+			state:          gs.MessageStateTime,
+			nextState:      gs.MessageStateDay,
+			needInput:      true,
+			waitingForTime: true,
 		},
 		{
-			state:            gs.MessageStateTimer,
-			nextState:        gs.MessageStateDone,
-			msg:              "Цель сохранилась",
-			waitingForNotify: true,
+			state:     gs.MessageStateDay,
+			nextState: gs.MessageStateDone,
+			needInput: true,
+			isFinal:   true,
+		},
+		{
+			state:           gs.MessageStateTimer,
+			nextState:       gs.MessageStateDone,
+			msg:             "Цель сохранилась",
+			needInput:       true,
+			waitingForTimer: true,
+			isFinal:         true,
 		},
 	}
 }

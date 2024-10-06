@@ -1,9 +1,12 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/AlekSi/pointer"
 
 	gs "github.com/mrbelka12000/goals_scheduler"
 	"github.com/mrbelka12000/goals_scheduler/internal/models"
@@ -22,10 +25,9 @@ func (uc *UseCase) StartGoal(msg models.Message) string {
 
 	text, _, err := uc.handleGoalCreate(msg, true)
 	if err != nil {
-		uc.log.Error().Err(err).Msg("start goal create")
+		uc.log.Error().Err(err).Msg("start goal")
 	}
 
-	fmt.Println(text)
 	return text
 }
 
@@ -57,9 +59,11 @@ func (uc *UseCase) handleGoalCreate(
 		state = gs.State(stateStr)
 	}
 
-	fmt.Println(state)
-
 	currSchema := getNextSchema(state)
+
+	if currSchema.needInput && msg.Text == "" {
+		return gs.SomethingWentWrong, "-", fmt.Errorf("no input provided")
+	}
 
 	if currSchema.isStart {
 		if err = uc.cache.Set(gs.GetKeyState(msg.UserID), currSchema.nextState, blockTime); err != nil {
@@ -85,90 +89,93 @@ func (uc *UseCase) handleGoalCreate(
 		}
 	}
 
-	if currSchema.waitingForNotify {
-		uc.cache.Set(gs.GetKeyNotify(msg.UserID), msg.Text, blockTime)
+	if currSchema.waitingForTimer {
+		if err = uc.cache.Set(gs.GetKeyTimer(msg.UserID), msg.Text, blockTime); err != nil {
+			return gs.SomethingWentWrong, "-", fmt.Errorf("set timer message in cache: %w", err)
+		}
+	}
 
-		// delete states
-		for _, k := range gs.KeysToGoal {
-			key := fmt.Sprintf("%v:%v", k, msg.UserID)
-			uc.cache.Delete(key)
+	if currSchema.waitingForTime {
+		uc.cache.Set(gs.GetKeyNotify(msg.UserID), msg.Text, blockTime)
+	}
+
+	if currSchema.isFinal {
+		err = uc.BuildGoal(msg.UserID, msg.ChatID)
+		if err != nil {
+			return gs.SomethingWentWrong, "-", fmt.Errorf("build goal: %w", err)
 		}
 	}
 
 	return currSchema.msg, currSchema.nextState, nil
-	//
-	//switch state {
-	//case cns.MessageStateText:
-	//
-	//	uc.cache.Set(gs.GetKeyText(msg.UserID), msg.Text, blockTime)
-	//	uc.cache.Set(gs.GetKeyState(msg.UserID), cns.MessageStateDeadline, blockTime)
-	//	return "Введите крайний срок для цели", cns.MessageStateDeadline, nil
-	//
-	//case cns.MessageStateDeadline:
-	//
-	//	return cns.NotifyFormat, cns.MessageStateTimer, nil
-	//
-	//case cns.MessageStateTimer:
-	//	if msg.Text != "-" {
-	//		uc.cache.Set(gs.GetKeyTimer(msg.UserID), msg.Text, blockTime)
-	//	}
-	//	mp := make(map[gs.Key]interface{})
-	//
-	//	// collect states
-	//	for _, k := range gs.KeysToGoal {
-	//		key := fmt.Sprintf("%v:%v", k, msg.UserID)
-	//		val, _ := uc.cache.Get(key)
-	//		mp[k] = val
-	//	}
-	//
-	//	// parse time from request
-	//	{
-	//		parsedTime, err := time.Parse(cns.DateFormat, mp[gs.KeyDeadline].(string))
-	//		if err != nil {
-	//			uc.log.Err(err).Msg(fmt.Sprintf("parse time: %v", mp[gs.KeyDeadline]))
-	//			return cns.SomethingWentWrong, "", nil
-	//		}
-	//		mp[gs.KeyDeadline] = parsedTime
-	//	}
-	//
-	//	// parse ticker duration
-	//	{
-	//		durStr := mp[gs.KeyTimer].(string)
-	//		if durStr != "" && durStr != "-" {
-	//			dur, err := time.ParseDuration(durStr)
-	//			if err != nil {
-	//				uc.log.Err(err).Msg(fmt.Sprintf("parse duration: %v", mp[gs.KeyTimer]))
-	//				return cns.SomethingWentWrong, "", nil
-	//			}
-	//			mp[gs.KeyTimer] = dur
-	//			mp[gs.KeyTimerEnabled] = true
-	//		} else {
-	//			delete(mp, gs.KeyTimer)
-	//		}
-	//	}
-	//
-	//	{
-	//		var goal models.GoalCU
-	//
-	//		jsonBody, _ := json.Marshal(mp)
-	//		err := json.Unmarshal(jsonBody, &goal)
-	//		if err != nil {
-	//			uc.log.Err(err).Msg("goal from map")
-	//			return cns.SomethingWentWrong, "", nil
-	//		}
-	//
-	//		goal.UsrID = pointer.ToInt(msg.UserID)
-	//		goal.ChatID = pointer.ToString(msg.ChatID)
-	//
-	//		_, err = uc.GoalCreate(context.Background(), goal)
-	//		if err != nil {
-	//			uc.log.Err(err).Msg("goal create")
-	//			return cns.SomethingWentWrong, "", nil
-	//		}
-	//	}
-	//
-	//	return "Цель сохранилась", cns.MessageStateDone, nil
-	//}
-	//
-	//return "Не туда", "", nil
+}
+
+func (uc *UseCase) ChooseMethod(userID int, val gs.State, choose gs.Key) error {
+	if err := uc.cache.Set(gs.GetKeyState(userID), val, blockTime); err != nil {
+		return fmt.Errorf("set state %s in cache: %w", val, err)
+	}
+
+	if err := uc.cache.Set(gs.GetKeyChoose(userID), choose, blockTime); err != nil {
+		return fmt.Errorf("set choose %s in cache: %w", val, err)
+	}
+
+	return nil
+}
+
+func (uc *UseCase) BuildGoal(userID int, chatID string) error {
+	var (
+		goal models.GoalCU
+		err  error
+	)
+
+	val, ok := uc.cache.Get(gs.GetKeyDeadline(userID))
+	if !ok {
+		return errors.New("no deadline in cache")
+	}
+
+	parsedTime, err := time.Parse(gs.DateFormat, val)
+	if err != nil {
+		return fmt.Errorf("parse time: %w", err)
+	}
+	goal.Deadline = &parsedTime
+
+	val, ok = uc.cache.Get(gs.GetKeyChoose(userID))
+	if ok {
+		switch val {
+		case string(gs.KeyNotify):
+
+		case string(gs.KeyTimer):
+			val, ok = uc.cache.Get(gs.GetKeyTimer(userID))
+			if !ok {
+				return errors.New("no timer in cache")
+			}
+
+			durStr := val
+			if durStr != "" && durStr != "-" {
+				dur, err := time.ParseDuration(durStr)
+				if err != nil {
+					return fmt.Errorf("can not parse duration %s: %w", durStr, err)
+				}
+				goal.Timer = &dur
+				goal.TimerEnabled = true
+			}
+		default:
+			return fmt.Errorf("unknown choose method: %v", val)
+		}
+	}
+
+	val, ok = uc.cache.Get(gs.GetKeyText(userID))
+	if !ok {
+		return errors.New("no deadline in cache")
+	}
+
+	goal.Text = &val
+	goal.UsrID = pointer.ToInt(userID)
+	goal.ChatID = pointer.ToString(chatID)
+
+	_, err = uc.GoalCreate(context.Background(), goal)
+	if err != nil {
+		return fmt.Errorf("goal create: %w", err)
+	}
+
+	return nil
 }

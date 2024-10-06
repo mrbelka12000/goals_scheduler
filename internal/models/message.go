@@ -31,7 +31,5 @@ type (
 
 	GoalCreateData struct {
 		Action string `json:"action,omitempty"`
-		ID     int64  `json:"id,omitempty"`
-		Method string `json:"method,omitempty"`
 	}
 )
