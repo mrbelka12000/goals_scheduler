@@ -106,6 +106,7 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 		if cbData.Calendar != nil && cbData.Calendar.Data != "" {
 			msg, _ = a.uc.HandleMessage(models.Message{
 				UserID: cq.From.ID,
+				ChatID: cq.Message.Chat.ID,
 				Text:   cbData.Calendar.Data,
 			})
 
@@ -121,6 +122,7 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 		if text != "" {
 			msg, _ = a.uc.HandleMessage(models.Message{
 				UserID: cq.From.ID,
+				ChatID: cq.Message.Chat.ID,
 				Text:   text,
 			})
 		}

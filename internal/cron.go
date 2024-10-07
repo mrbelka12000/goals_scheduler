@@ -66,7 +66,7 @@ func (c *Cron) cleaner() {
 		StatusID: pointer.To(gs.StatusGoalStarted),
 	})
 	if err != nil {
-		c.log.Err(err).Msg("failed to get goal list in cleaner")
+		c.log.Err(err).Msg("failed to get goal list")
 		return
 	}
 
@@ -78,7 +78,7 @@ func (c *Cron) cleaner() {
 				Status: pointer.To(gs.StatusGoalFailed),
 			}, goal.ID)
 			if err != nil {
-				c.log.Err(err).Msg("failed to update goal status in cleaner")
+				c.log.Err(err).Msg("failed to update goal status")
 				return
 			}
 		}
@@ -92,7 +92,7 @@ func (c *Cron) senderTimer() {
 		TimerEnabled: pointer.To(true),
 	})
 	if err != nil {
-		c.log.Err(err).Msg("failed to get goals in sender timer")
+		c.log.Err(err).Msg("failed to get goals")
 		return
 	}
 
@@ -104,7 +104,7 @@ func (c *Cron) senderTimer() {
 				Timer: goal.Timer,
 			}, goal.ID)
 			if err != nil {
-				c.log.Err(err).Msg("failed to update goal in sender timer")
+				c.log.Err(err).Msg("failed to update goal timer")
 				return
 			}
 		}
@@ -118,25 +118,26 @@ func (c *Cron) senderNotify() {
 		NotifyEnabled: pointer.To(true),
 	})
 	if err != nil {
-		c.log.Err(err).Msg("failed to get goals in sender timer")
+		c.log.Err(err).Msg("failed to get goals")
 		return
 	}
 
 	now := time.Now()
-	fmt.Println(now)
-
 	for _, goal := range goals {
 		notify, err := c.uc.NotifyGet(context.Background(), models.NotifyPars{
 			GoalID:  pointer.To(goal.ID),
 			WeekDay: pointer.To(gs.CastWeekdayToDay(now.Weekday())),
 		})
 		if err != nil {
-			c.log.Err(err).Msg("failed to get notify in sender for alarm")
+			c.log.Err(err).Msg("failed to get notify for alarm")
 			continue
 		}
 
 		if notify.Hour == now.Hour() && notify.Minute == now.Minute() {
-			c.client.SendMessage(goal.ChatID, fmt.Sprintf(notifMessage, goal.Text))
+			_, err := c.client.SendMessage(goal.ChatID, fmt.Sprintf(notifMessage, goal.Text))
+			if err != nil {
+				c.log.Err(err).Msg("failed send")
+			}
 		}
 	}
 }

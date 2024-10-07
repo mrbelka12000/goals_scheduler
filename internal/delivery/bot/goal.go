@@ -44,6 +44,7 @@ func (a *Application) deleteUsersGoals(m *tbot.Message) {
 func (a *Application) handleCreateGoal(m *tbot.Message) {
 	msg := a.uc.StartGoal(models.Message{
 		UserID: m.From.ID,
+		ChatID: m.Chat.ID,
 		Text:   m.Text,
 	})
 
