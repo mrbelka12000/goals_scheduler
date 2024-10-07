@@ -29,7 +29,6 @@ func (g *Goal) Create(ctx context.Context, obj *models.GoalCU) (int64, error) {
 
 	obj.LastUpdated = pointer.To(time.Now().Add(*obj.Timer))
 
-	fmt.Printf("%+v\n", *obj)
 	err := g.validate(obj)
 	if err != nil {
 		return 0, fmt.Errorf("validate goal: %w", err)

@@ -123,6 +123,8 @@ func (c *Cron) senderNotify() {
 	}
 
 	now := time.Now()
+	fmt.Println(now)
+
 	for _, goal := range goals {
 		notify, err := c.uc.NotifyGet(context.Background(), models.NotifyPars{
 			GoalID:  pointer.To(goal.ID),

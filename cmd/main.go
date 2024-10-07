@@ -22,8 +22,7 @@ import (
 func main() {
 	log := zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 
-	loc := time.FixedZone("UTC-5", 1*13*16)
-	time.Local = loc
+	time.Local = time.UTC
 
 	cfg, err := config.Get()
 	if err != nil {
