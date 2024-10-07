@@ -16,6 +16,7 @@ type (
 		Calendar   *CalendarData   `json:"calendar,omitempty"`
 		Goal       *GoalData       `json:"goal,omitempty"`
 		GoalCreate *GoalCreateData `json:"goal_create,omitempty"`
+		Day        *Day            `json:"day,omitempty"`
 	}
 
 	CalendarData struct {
@@ -31,5 +32,14 @@ type (
 
 	GoalCreateData struct {
 		Action string `json:"action,omitempty"`
+	}
+
+	Day struct {
+		Action  string `json:"action,omitempty"`
+		Weekday gs.Day `json:"weekday"`
+	}
+
+	DayInfo struct {
+		Mark []bool
 	}
 )

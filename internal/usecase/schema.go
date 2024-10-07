@@ -9,7 +9,6 @@ type schema struct {
 	nextState gs.State
 	msg       string
 
-	isStart            bool
 	isFinal            bool
 	waitingForText     bool // text of goal
 	waitingForDeadline bool // date 15-02-2002
@@ -17,48 +16,55 @@ type schema struct {
 	waitingForTimer    bool // timer 5s, 10h...
 	waitingForDay      bool // weekday Monday, Tuesday...
 	needInput          bool // need text from user or not
+	needToChangeState  bool
 }
 
 func initSchema() []schema {
 	return []schema{
 		{
-			state:     gs.MessageStateStart,
-			nextState: gs.MessageStateText,
-			isStart:   true,
-			msg:       "Введите текст цели",
+			state:             gs.MessageStateStart,
+			nextState:         gs.MessageStateText,
+			msg:               gs.MessageStart,
+			needToChangeState: true,
 		},
 		{
-			state:          gs.MessageStateText,
-			nextState:      gs.MessageStateDeadline,
-			msg:            "Введите крайний срок для цели",
-			needInput:      true,
-			waitingForText: true,
+			state:             gs.MessageStateText,
+			nextState:         gs.MessageStateDeadline,
+			msg:               gs.MessageDeadline,
+			needInput:         true,
+			waitingForText:    true,
+			needToChangeState: true,
 		},
 		{
 			state:              gs.MessageStateDeadline,
 			nextState:          gs.MessageStateChoseMethod,
 			needInput:          true,
 			waitingForDeadline: true,
+			needToChangeState:  true,
 		},
 		{
 			state: gs.MessageStateChoseMethod,
 		},
 		{
-			state:          gs.MessageStateTime,
-			nextState:      gs.MessageStateDay,
-			needInput:      true,
-			waitingForTime: true,
+			state:             gs.MessageStateTime,
+			nextState:         gs.MessageStateDay,
+			msg:               gs.MessageDayFormat,
+			needInput:         true,
+			waitingForTime:    true,
+			needToChangeState: true,
 		},
 		{
-			state:     gs.MessageStateDay,
-			nextState: gs.MessageStateDone,
-			needInput: true,
-			isFinal:   true,
+			state:         gs.MessageStateDay,
+			nextState:     gs.MessageStateDone,
+			msg:           gs.MessageDone,
+			needInput:     true,
+			waitingForDay: true,
+			isFinal:       true,
 		},
 		{
 			state:           gs.MessageStateTimer,
 			nextState:       gs.MessageStateDone,
-			msg:             "Цель сохранилась",
+			msg:             gs.MessageDone,
 			needInput:       true,
 			waitingForTimer: true,
 			isFinal:         true,

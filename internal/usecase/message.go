@@ -2,8 +2,11 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AlekSi/pointer"
@@ -65,27 +68,15 @@ func (uc *UseCase) handleGoalCreate(
 		return gs.SomethingWentWrong, "-", fmt.Errorf("no input provided")
 	}
 
-	if currSchema.isStart {
-		if err = uc.cache.Set(gs.GetKeyState(msg.UserID), currSchema.nextState, blockTime); err != nil {
-			return gs.SomethingWentWrong, "-", fmt.Errorf("set state %s in cache: %w", currSchema.nextState, err)
-		}
-	}
-
 	if currSchema.waitingForText {
 		if err = uc.cache.Set(gs.GetKeyText(msg.UserID), msg.Text, blockTime); err != nil {
 			return gs.SomethingWentWrong, "-", fmt.Errorf("set text message in cache: %w", err)
-		}
-		if err = uc.cache.Set(gs.GetKeyState(msg.UserID), currSchema.nextState, blockTime); err != nil {
-			return gs.SomethingWentWrong, "-", fmt.Errorf("set state %s in cache: %w", currSchema.nextState, err)
 		}
 	}
 
 	if currSchema.waitingForDeadline {
 		if err = uc.cache.Set(gs.GetKeyDeadline(msg.UserID), msg.Text, blockTime); err != nil {
 			return gs.SomethingWentWrong, "-", fmt.Errorf("set deadline message in cache: %w", err)
-		}
-		if err = uc.cache.Set(gs.GetKeyState(msg.UserID), currSchema.nextState, blockTime); err != nil {
-			return gs.SomethingWentWrong, "-", fmt.Errorf("set state %s in cache: %w", currSchema.nextState, err)
 		}
 	}
 
@@ -96,7 +87,29 @@ func (uc *UseCase) handleGoalCreate(
 	}
 
 	if currSchema.waitingForTime {
-		uc.cache.Set(gs.GetKeyNotify(msg.UserID), msg.Text, blockTime)
+		hours, minutes, err := validateTime(msg.Text)
+		if err != nil {
+			return gs.SomethingWentWrong, "-", fmt.Errorf("validate time message: %w", err)
+		}
+
+		if err = uc.cache.Set(gs.GetKeyHour(msg.UserID), fmt.Sprint(hours), blockTime); err != nil {
+			return gs.SomethingWentWrong, "-", fmt.Errorf("set hour in cache: %w", err)
+		}
+		if err = uc.cache.Set(gs.GetKeyMinute(msg.UserID), fmt.Sprint(minutes), blockTime); err != nil {
+			return gs.SomethingWentWrong, "-", fmt.Errorf("set minutes in cache: %w", err)
+		}
+	}
+
+	if currSchema.waitingForDay {
+		if err = uc.cache.Set(gs.GetKeyDay(msg.UserID), msg.Text, blockTime); err != nil {
+			return gs.SomethingWentWrong, "-", fmt.Errorf("set day message in cache: %w", err)
+		}
+	}
+
+	if currSchema.needToChangeState {
+		if err = uc.cache.Set(gs.GetKeyState(msg.UserID), currSchema.nextState, blockTime); err != nil {
+			return gs.SomethingWentWrong, "-", fmt.Errorf("set state %s in cache: %w", currSchema.nextState, err)
+		}
 	}
 
 	if currSchema.isFinal {
@@ -123,8 +136,9 @@ func (uc *UseCase) ChooseMethod(userID int, val gs.State, choose gs.Key) error {
 
 func (uc *UseCase) BuildGoal(userID int, chatID string) error {
 	var (
-		goal models.GoalCU
-		err  error
+		goal   models.GoalCU
+		notify models.NotifyCU
+		err    error
 	)
 
 	val, ok := uc.cache.Get(gs.GetKeyDeadline(userID))
@@ -142,7 +156,36 @@ func (uc *UseCase) BuildGoal(userID int, chatID string) error {
 	if ok {
 		switch val {
 		case string(gs.KeyNotify):
+			val, ok = uc.cache.Get(gs.GetKeyHour(userID))
+			if !ok {
+				return errors.New("no hours in cache")
+			}
+			hours, err := strconv.Atoi(val)
+			if err != nil {
+				return fmt.Errorf("parse hour: %w", err)
+			}
+			notify.Hour = &hours
 
+			val, ok = uc.cache.Get(gs.GetKeyMinute(userID))
+			if !ok {
+				return errors.New("no minutes in cache")
+			}
+			minutes, err := strconv.Atoi(val)
+			if err != nil {
+				return fmt.Errorf("parse hour: %w", err)
+			}
+			notify.Minute = &minutes
+
+			val, ok = uc.cache.Get(gs.GetKeyDay(userID))
+			if !ok {
+				return errors.New("no day in cache")
+			}
+			var obj models.DayInfo
+			if err = json.Unmarshal([]byte(val), &obj); err != nil {
+				return fmt.Errorf("parse day info: %w", err)
+			}
+			notify.DayInfo = obj
+			goal.NotifyEnabled = true
 		case string(gs.KeyTimer):
 			val, ok = uc.cache.Get(gs.GetKeyTimer(userID))
 			if !ok {
@@ -172,10 +215,61 @@ func (uc *UseCase) BuildGoal(userID int, chatID string) error {
 	goal.UsrID = pointer.ToInt(userID)
 	goal.ChatID = pointer.ToString(chatID)
 
-	_, err = uc.GoalCreate(context.Background(), goal)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	goalID, err := uc.CreateGoal(ctx, goal)
 	if err != nil {
 		return fmt.Errorf("goal create: %w", err)
 	}
 
+	if goal.NotifyEnabled {
+		notify.GoalID = &goalID
+		var errorTrigered bool
+		for i, v := range notify.DayInfo.Mark {
+			if v {
+				wd := gs.Day(i)
+				notify.Weekday = &wd
+				_, err = uc.NotifyCreate(ctx, notify)
+				if err != nil {
+					uc.log.Err(err).Msg("notify create")
+					errorTrigered = true
+					break
+				}
+			}
+		}
+		if errorTrigered {
+			return uc.GoalDelete(ctx, goalID)
+		}
+	}
+
 	return nil
+}
+
+func validateTime(timeStr string) (hours int, minutes int, err error) {
+	if timeStr == "" {
+		return 0, 0, errors.New("time is empty")
+	}
+	parts := strings.Split(timeStr, ":")
+	if len(parts) != 2 {
+		return 0, 0, errors.New("time is invalid")
+	}
+
+	hours, err = strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, fmt.Errorf("hour is not number")
+	}
+	if hours < 0 || hours > 23 {
+		return 0, 0, fmt.Errorf("hour must be between 0 and 23")
+	}
+
+	minutes, err = strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, fmt.Errorf("minute is not number")
+	}
+	if minutes < 0 || minutes > 59 {
+		return 0, 0, fmt.Errorf("minute must be between 0 and 59")
+	}
+
+	return hours, minutes, nil
 }

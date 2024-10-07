@@ -49,7 +49,6 @@ func main() {
 	app := bot.NewApp(telBot.Client(), uc, log)
 	cron := internal.NewCron(telBot.Client(), uc, log)
 	go cron.Start()
-
 	go func() {
 		//health check
 		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {

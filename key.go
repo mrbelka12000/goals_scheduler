@@ -9,7 +9,10 @@ const (
 	KeyDeadline     Key = "deadline"
 	KeyState        Key = "state"
 	KeyTimer        Key = "timer"
+	KeyHour         Key = "hour"
+	KeyMinute       Key = "minute"
 	KeyNotify       Key = "notify"
+	KeyDay          Key = "day"
 	KeyTimerEnabled Key = "timer_enabled"
 	KeyChoose       Key = "choose"
 )
@@ -18,7 +21,18 @@ func (k Key) MarshalBinary() ([]byte, error) {
 	return []byte(k), nil
 }
 
-var KeysToGoal = []Key{KeyText, KeyDeadline, KeyTimer, KeyNotify, KeyTimerEnabled, KeyChoose, KeyState}
+var KeysToGoal = []Key{
+	KeyText,
+	KeyDeadline,
+	KeyState,
+	KeyTimer,
+	KeyHour,
+	KeyMinute,
+	KeyNotify,
+	KeyDay,
+	KeyTimerEnabled,
+	KeyChoose,
+}
 
 func getKey(key Key, userID int) string {
 	return fmt.Sprintf("%v:%v", key, userID)
@@ -36,8 +50,16 @@ func GetKeyTimer(userID int) string {
 	return getKey(KeyTimer, userID)
 }
 
-func GetKeyNotify(userID int) string {
-	return getKey(KeyNotify, userID)
+func GetKeyHour(userID int) string {
+	return getKey(KeyHour, userID)
+}
+
+func GetKeyMinute(userID int) string {
+	return getKey(KeyMinute, userID)
+}
+
+func GetKeyDay(userID int) string {
+	return getKey(KeyDay, userID)
 }
 
 func GetKeyState(userID int) string {

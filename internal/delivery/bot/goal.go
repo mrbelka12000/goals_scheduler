@@ -11,15 +11,6 @@ import (
 	"github.com/mrbelka12000/goals_scheduler/internal/models"
 )
 
-const (
-	ActionGoalDelete = "delete"
-	ActionGoalUpdate = "update"
-	ActionGoalSelect = "select"
-
-	ActionGoalCreateTimer  = "timer"
-	ActionGoalCreateNotify = "notify"
-)
-
 func (a *Application) deleteGoal(m *tbot.Message) {
 	list, _, err := a.uc.GoalList(context.Background(), models.GoalPars{UsrID: pointer.ToInt(m.From.ID)})
 	if err != nil {
@@ -167,9 +158,10 @@ func GetGoalActions(id int64) *tbot.InlineKeyboardMarkup {
 	}
 }
 
-func (a *Application) handleGoalCreate(cq *tbot.CallbackQuery, data *models.GoalCreateData) string {
+func (a *Application) handleCallbackGoalCreate(cq *tbot.CallbackQuery, data *models.GoalCreateData) string {
 	a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 	switch data.Action {
+
 	case ActionGoalCreateTimer:
 		err := a.uc.ChooseMethod(cq.From.ID, gs.MessageStateTimer, gs.KeyTimer)
 		if err != nil {
@@ -186,8 +178,7 @@ func (a *Application) handleGoalCreate(cq *tbot.CallbackQuery, data *models.Goal
 			return gs.SomethingWentWrong
 		}
 
-		return gs.MessageTimeFromat
-
+		return gs.MessageTimeFormat
 	case "-":
 		err := a.uc.BuildGoal(cq.From.ID, cq.Message.Chat.ID)
 		if err != nil {
@@ -196,9 +187,10 @@ func (a *Application) handleGoalCreate(cq *tbot.CallbackQuery, data *models.Goal
 		}
 
 		return gs.MessageDone
-	}
 
-	return ""
+	default:
+		return ""
+	}
 }
 
 func (a *Application) GetGoalCreateActions() *tbot.InlineKeyboardMarkup {
@@ -237,5 +229,4 @@ func (a *Application) GetGoalCreateActions() *tbot.InlineKeyboardMarkup {
 			},
 		},
 	}
-
 }

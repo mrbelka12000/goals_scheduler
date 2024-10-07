@@ -23,11 +23,11 @@ type (
 		client *tbot.Client
 
 		// Key is fmt.Sprintf(chatID+:+messageID)
-		store map[string]*info
+		store map[string]*calendarInfo
 		sync.Mutex
 		log zerolog.Logger
 	}
-	info struct {
+	calendarInfo struct {
 		year  int
 		month time.Month
 	}
@@ -36,7 +36,7 @@ type (
 func newCalendar(client *tbot.Client, log zerolog.Logger) *calendar {
 	return &calendar{
 		client: client,
-		store:  make(map[string]*info),
+		store:  make(map[string]*calendarInfo),
 		log:    log,
 	}
 }
@@ -52,7 +52,7 @@ func (c *calendar) calendarHandler(m *tbot.Message) {
 	}
 
 	c.Lock()
-	c.store[fmt.Sprintf("%v:%v", m.Chat.ID, msg.MessageID)] = &info{
+	c.store[fmt.Sprintf("%v:%v", m.Chat.ID, msg.MessageID)] = &calendarInfo{
 		year:  now.Year(),
 		month: now.Month(),
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/mrbelka12000/goals_scheduler/internal/models"
 )
 
-func (uc *UseCase) GoalCreate(ctx context.Context, obj models.GoalCU) (int64, error) {
+func (uc *UseCase) CreateGoal(ctx context.Context, obj models.GoalCU) (int64, error) {
 	id, err := uc.srv.Goal.Create(ctx, &obj)
 	if err != nil {
 		return 0, err

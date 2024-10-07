@@ -13,17 +13,31 @@ import (
 	"github.com/mrbelka12000/goals_scheduler/internal/usecase"
 )
 
+const (
+	ActionGoalDelete = "delete"
+	ActionGoalUpdate = "update"
+	ActionGoalSelect = "select"
+
+	ActionGoalCreateTimer  = "timer"
+	ActionGoalCreateNotify = "notify"
+
+	ActionDayMark   = "mark"
+	ActionDaySubmit = "submit"
+)
+
 type Application struct {
 	client   *tbot.Client
 	uc       *usecase.UseCase
 	log      zerolog.Logger
 	calendar *calendar
+	day      *day
 }
 
 func NewApp(client *tbot.Client, uc *usecase.UseCase, log zerolog.Logger) *Application {
 	return &Application{
 		client:   client,
 		calendar: newCalendar(client, log),
+		day:      newDay(client, log),
 		uc:       uc,
 		log:      log,
 	}
@@ -62,6 +76,8 @@ func (a *Application) handleAllMessages(m *tbot.Message) {
 	switch state {
 	case gs.MessageStateDeadline:
 		a.calendar.calendarHandler(m)
+	case gs.MessageStateDay:
+		a.client.SendMessage(m.Chat.ID, msg, tbot.OptInlineKeyboardMarkup(a.day.getBaseKeyboard(nil)))
 	default:
 		a.client.SendMessage(m.Chat.ID, msg)
 	}
@@ -98,7 +114,16 @@ func (a *Application) handleCallbacks(cq *tbot.CallbackQuery) {
 			return
 		}
 	case gs.CallbackTypeGoalCreate:
-		msg = a.handleGoalCreate(cq, cbData.GoalCreate)
+		msg = a.handleCallbackGoalCreate(cq, cbData.GoalCreate)
+
+	case gs.CallbackTypeDay:
+		text := a.day.handleCallbackDay(cq, cbData.Day)
+		if text != "" {
+			msg, _ = a.uc.HandleMessage(models.Message{
+				UserID: cq.From.ID,
+				Text:   text,
+			})
+		}
 	}
 
 	// only for CallbackTypeGoal

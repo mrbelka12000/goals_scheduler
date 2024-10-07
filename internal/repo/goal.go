@@ -21,10 +21,30 @@ func newGoal(db *sql.DB) *goal {
 }
 
 func (r *goal) Create(ctx context.Context, obj *models.GoalCU) (int64, error) {
-	query := "INSERT INTO goals (usr_id, chat_id, message, status_id, deadline, timer, timer_enabled, last_updated) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"
+	query := `
+INSERT INTO goals (
+	usr_id,
+	chat_id,
+	message,
+	status_id,
+	deadline,
+	timer,
+	timer_enabled,
+	last_updated,
+	notify_enabled) VALUES (
+	$1, 
+	$2, 
+	$3, 
+	$4, 
+	$5, 
+	$6, 
+	$7, 
+	$8, 
+	$9
+) RETURNING id`
 
 	var id int64
-	err := r.db.QueryRowContext(ctx, query, *obj.UsrID, *obj.ChatID, *obj.Text, *obj.Status, *obj.Deadline, *obj.Timer, obj.TimerEnabled, *obj.LastUpdated).Scan(&id)
+	err := r.db.QueryRowContext(ctx, query, *obj.UsrID, *obj.ChatID, *obj.Text, *obj.Status, *obj.Deadline, *obj.Timer, obj.TimerEnabled, *obj.LastUpdated, obj.NotifyEnabled).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("create goal: %w", err)
 	}
@@ -39,7 +59,13 @@ func (r *goal) Delete(ctx context.Context, id int64) error {
 }
 
 func (r *goal) Get(ctx context.Context, id int64) (models.Goal, error) {
-	query := "SELECT id, usr_id, message, status_id, deadline FROM goals WHERE id = $1"
+	query := `
+SELECT id,
+       usr_id,
+       message,
+       status_id,
+       deadline FROM goals WHERE id = $1`
+
 	var goal models.Goal
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&goal.ID, &goal.UsrID, &goal.Text, &goal.Status, &goal.Deadline)
 	if err != nil {
@@ -50,7 +76,18 @@ func (r *goal) Get(ctx context.Context, id int64) (models.Goal, error) {
 }
 
 func (r *goal) List(ctx context.Context, pars models.GoalPars) ([]models.Goal, int64, error) {
-	query := "SELECT id, usr_id, chat_id, message, status_id, deadline, timer, timer_enabled, last_updated FROM goals WHERE"
+	query := `
+SELECT 
+    id, 
+    usr_id, chat_id,
+    message,
+    status_id,
+    deadline,
+    timer,
+    timer_enabled,
+    last_updated,
+    notify_enabled
+    FROM goals WHERE`
 
 	var args []interface{}
 
@@ -74,6 +111,11 @@ func (r *goal) List(ctx context.Context, pars models.GoalPars) ([]models.Goal, i
 		query += fmt.Sprintf(" timer_enabled = $%v AND", len(args))
 	}
 
+	if pars.NotifyEnabled != nil {
+		args = append(args, *pars.NotifyEnabled)
+		query += fmt.Sprintf(" notify_enabled = $%v AND", len(args))
+	}
+
 	query = query[:len(query)-4] // Remove the trailing " AND"
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
@@ -95,6 +137,7 @@ func (r *goal) List(ctx context.Context, pars models.GoalPars) ([]models.Goal, i
 			&goal.Timer,
 			&goal.TimerEnabled,
 			&goal.LastUpdated,
+			&goal.NotifyEnabled,
 		)
 
 		if err != nil {
