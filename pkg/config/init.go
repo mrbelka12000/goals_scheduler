@@ -15,7 +15,6 @@ type Config struct {
 	RedisAddr      string `env:"REDIS_ADDR,required"`
 	RedisPassword  string `env:"REDIS_PASSWORD,required"`
 	MigrationsPath string `env:"MIGRATIONS_PATH, default=migrations/"`
-	HttpPort       string `env:"HTTP_PORT, default=8080"`
 	ServiceName    string `env:"SERVICE_NAME,required"`
 	UseMigrates    bool   `env:"USE_MIGRATES,default=false"`
 	HTTPPort       string `env:"HTTP_PORT, default=5552"`
