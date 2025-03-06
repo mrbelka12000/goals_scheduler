@@ -13,7 +13,6 @@ type Config struct {
 	PGURL          string `env:"PG_URL,required"`
 	TelegramToken  string `env:"TELEGRAM_TOKEN,required"`
 	RedisAddr      string `env:"REDIS_ADDR,required"`
-	RedisPassword  string `env:"REDIS_PASSWORD,required"`
 	MigrationsPath string `env:"MIGRATIONS_PATH, default=migrations/"`
 	ServiceName    string `env:"SERVICE_NAME,required"`
 	UseMigrates    bool   `env:"USE_MIGRATES,default=false"`
