@@ -164,7 +164,7 @@ func (a *Application) handleCallbackGoalCreate(cq *tbot.CallbackQuery, data *mod
 	switch data.Action {
 
 	case ActionGoalCreateTimer:
-		err := a.uc.ChooseMethod(cq.From.ID, gs.MessageStateTimer, gs.KeyTimer)
+		err := a.uc.ChooseMethod(cq.From.ID, gs.StateTimerInterval, gs.KeyTimer)
 		if err != nil {
 			a.log.Err(err).Msg("choose method")
 			return gs.SomethingWentWrong
@@ -173,7 +173,7 @@ func (a *Application) handleCallbackGoalCreate(cq *tbot.CallbackQuery, data *mod
 		return gs.MessageTimerFormat
 
 	case ActionGoalCreateNotify:
-		err := a.uc.ChooseMethod(cq.From.ID, gs.MessageStateTime, gs.KeyNotify)
+		err := a.uc.ChooseMethod(cq.From.ID, gs.StateTime, gs.KeyNotify)
 		if err != nil {
 			a.log.Err(err).Msg("choose method")
 			return gs.SomethingWentWrong
@@ -213,6 +213,15 @@ func (a *Application) GetGoalCreateActions() *tbot.InlineKeyboardMarkup {
 						Type: gs.CallbackTypeGoalCreate,
 						GoalCreate: &models.GoalCreateData{
 							Action: ActionGoalCreateTimer,
+						},
+					}),
+				},
+				{
+					Text: "Дата",
+					CallbackData: callbackDataBuilder(models.CallbackData{
+						Type: gs.CallbackTypeGoalCreate,
+						GoalCreate: &models.GoalCreateData{
+							Action: ActionGoalCreateDate,
 						},
 					}),
 				},

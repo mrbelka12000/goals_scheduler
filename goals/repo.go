@@ -1,4 +1,4 @@
-package repo
+package goals
 
 import (
 	"context"
@@ -6,21 +6,30 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
-	"github.com/mrbelka12000/goals_scheduler/internal/models"
 )
 
-type goal struct {
-	db *sql.DB
-}
+type (
+	Repository interface {
+		Create(ctx context.Context, obj GoalCU) (int64, error)
+		Delete(ctx context.Context, id int64) error
+		Get(ctx context.Context, id int64) (Goal, error)
+		List(ctx context.Context, pars GoalPars) ([]Goal, int64, error)
+		DeleteAllUsersGoals(ctx context.Context, usrID int) error
+		Update(ctx context.Context, obj GoalCU, id int64) error
+	}
 
-func newGoal(db *sql.DB) *goal {
-	return &goal{
+	repo struct {
+		db *sql.DB
+	}
+)
+
+func NewRepo(db *sql.DB) Repository {
+	return &repo{
 		db: db,
 	}
 }
 
-func (r *goal) Create(ctx context.Context, obj *models.GoalCU) (int64, error) {
+func (r *repo) Create(ctx context.Context, obj GoalCU) (int64, error) {
 	query := `
 INSERT INTO goals (
 	usr_id,
@@ -44,7 +53,16 @@ INSERT INTO goals (
 ) RETURNING id`
 
 	var id int64
-	err := r.db.QueryRowContext(ctx, query, *obj.UsrID, *obj.ChatID, *obj.Text, *obj.Status, *obj.Deadline, *obj.Timer, obj.TimerEnabled, *obj.LastUpdated, obj.NotifyEnabled).Scan(&id)
+	err := r.db.QueryRowContext(ctx,
+		query,
+		*obj.UsrID, *obj.ChatID,
+		*obj.Text,
+		*obj.Status,
+		*obj.Deadline,
+		*obj.Timer,
+		obj.TimerEnabled,
+		*obj.LastUpdated,
+		obj.NotifyEnabled).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("create goal: %w", err)
 	}
@@ -52,13 +70,13 @@ INSERT INTO goals (
 	return id, nil
 }
 
-func (r *goal) Delete(ctx context.Context, id int64) error {
+func (r *repo) Delete(ctx context.Context, id int64) error {
 	query := "DELETE FROM goals WHERE id = $1"
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }
 
-func (r *goal) Get(ctx context.Context, id int64) (models.Goal, error) {
+func (r *repo) Get(ctx context.Context, id int64) (Goal, error) {
 	query := `
 SELECT id,
        usr_id,
@@ -66,16 +84,16 @@ SELECT id,
        status_id,
        deadline FROM goals WHERE id = $1`
 
-	var goal models.Goal
+	var goal Goal
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&goal.ID, &goal.UsrID, &goal.Text, &goal.Status, &goal.Deadline)
 	if err != nil {
-		return models.Goal{}, err
+		return Goal{}, err
 	}
 
 	return goal, nil
 }
 
-func (r *goal) List(ctx context.Context, pars models.GoalPars) ([]models.Goal, int64, error) {
+func (r *repo) List(ctx context.Context, pars GoalPars) ([]Goal, int64, error) {
 	query := `
 SELECT 
     id, 
@@ -124,9 +142,9 @@ SELECT
 	}
 	defer rows.Close()
 
-	var goals []models.Goal
+	var goals []Goal
 	for rows.Next() {
-		var goal models.Goal
+		var goal Goal
 		err := rows.Scan(
 			&goal.ID,
 			&goal.UsrID,
@@ -149,13 +167,13 @@ SELECT
 	return goals, 0, nil
 }
 
-func (r *goal) DeleteAllUsersGoals(ctx context.Context, usrID int) error {
+func (r *repo) DeleteAllUsersGoals(ctx context.Context, usrID int) error {
 	query := "DELETE FROM goals where usr_id = $1"
 	_, err := r.db.ExecContext(ctx, query, usrID)
 	return err
 }
 
-func (r *goal) Update(ctx context.Context, obj models.GoalCU, id int64) error {
+func (r *repo) Update(ctx context.Context, obj GoalCU, id int64) error {
 	updateValues := []interface{}{id}
 	queryUpdate := ` UPDATE goals`
 	querySet := ` SET id = $1`

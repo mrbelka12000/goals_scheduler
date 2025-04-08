@@ -20,7 +20,8 @@ const (
 
 	ActionGoalCreateTimer  = "timer"
 	ActionGoalCreateNotify = "notify"
-
+	ActionGoalCreateDate   = "date"
+	
 	ActionDayMark   = "mark"
 	ActionDaySubmit = "submit"
 )
@@ -74,9 +75,9 @@ func (a *Application) handleAllMessages(m *tbot.Message) {
 	}
 
 	switch state {
-	case gs.MessageStateDeadline:
+	case gs.StateDeadline:
 		a.calendar.calendarHandler(m)
-	case gs.MessageStateDay:
+	case gs.StateDay:
 		a.client.SendMessage(m.Chat.ID, msg, tbot.OptInlineKeyboardMarkup(a.day.getBaseKeyboard(nil)))
 	default:
 		a.client.SendMessage(m.Chat.ID, msg)

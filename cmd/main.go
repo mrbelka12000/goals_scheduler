@@ -1,22 +1,18 @@
 package main
 
 import (
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
-	"github.com/yanzay/tbot/v2"
 
-	"github.com/mrbelka12000/goals_scheduler/internal"
-	"github.com/mrbelka12000/goals_scheduler/internal/delivery/bot"
-	"github.com/mrbelka12000/goals_scheduler/internal/repo"
-	"github.com/mrbelka12000/goals_scheduler/internal/service"
-	"github.com/mrbelka12000/goals_scheduler/internal/usecase"
+	"github.com/mrbelka12000/goals_scheduler/goals"
+	"github.com/mrbelka12000/goals_scheduler/messages"
 	"github.com/mrbelka12000/goals_scheduler/pkg/cache/redis"
 	"github.com/mrbelka12000/goals_scheduler/pkg/config"
 	"github.com/mrbelka12000/goals_scheduler/pkg/database"
+	"github.com/mrbelka12000/goals_scheduler/pkg/sender/tg"
+	"github.com/mrbelka12000/goals_scheduler/scheme"
 )
 
 func main() {
@@ -41,31 +37,16 @@ func main() {
 		return
 	}
 
-	rp := repo.New(db)
-	srv := service.New(rp)
-	uc := usecase.New(log, srv, cache)
-	telBot := tbot.New(cfg.TelegramToken)
-	app := bot.NewApp(telBot.Client(), uc, log)
-	cron := internal.NewCron(telBot.Client(), uc, log)
-	go cron.Start()
-	go func() {
-		//health check
-		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("ok"))
-		})
+	sender := tg.NewSender(cfg.TelegramMonitoringBot, cfg.TelegramMonitoringChatID, cfg.ServiceName, log)
 
-		// metrics
-		http.Handle("/metrics", promhttp.Handler())
+	//scheme service
+	schemeSvc := scheme.NewService()
 
-		err := http.ListenAndServe(":"+cfg.HTTPPort, nil)
-		if err != nil {
-			log.Fatal().Err(err).Msg("start http")
-		}
-	}()
+	// goals service
+	goalsRepo := goals.NewRepo(db)
+	goalsSvc := goals.NewService(goalsRepo)
+	goalsSvc = goals.NewErrorMW(goalsSvc, sender)
 
-	log.Info().Msg("Bot started")
-	if err := bot.Start(telBot, app); err != nil {
-		log.Error().Err(err).Msg("start bot")
-		return
-	}
+	messageSvc := messages.NewService(cache, goalsSvc, schemeSvc, cfg.TickerInterval)
+	_ = messageSvc
 }

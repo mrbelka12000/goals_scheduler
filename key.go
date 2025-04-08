@@ -15,6 +15,7 @@ const (
 	KeyDay          Key = "day"
 	KeyTimerEnabled Key = "timer_enabled"
 	KeyChoose       Key = "choose"
+	KeyDate         Key = "date"
 )
 
 func (k Key) MarshalBinary() ([]byte, error) {
