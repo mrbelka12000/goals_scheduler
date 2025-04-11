@@ -8,35 +8,32 @@ import (
 
 type (
 	Goal struct {
-		ID            int64          `json:"id,omitempty"`
-		Text          string         `json:"text,omitempty"`
-		Deadline      time.Time      `json:"deadline"`
-		Status        gs.StatusGoal  `json:"status,omitempty"`
-		UsrID         int            `json:"usr_id,omitempty"`
-		ChatID        string         `json:"chat_id"`
-		Timer         *time.Duration `json:"timer,omitempty"`
-		TimerEnabled  bool           `json:"timer_enabled"`
-		LastUpdated   time.Time      `json:"last_updated"`
-		NotifyEnabled bool           `json:"notify_enabled"`
-	}
+		ID             int64           `json:"id,omitempty"`
+		TelegramChatID string          `json:"telegram_chat_id,omitempty"`
+		ScheduleType   gs.ScheduleType `json:"schedule_type,omitempty"`
 
-	GoalCU struct {
-		Text          *string        `json:"text,omitempty"`
-		UsrID         *int           `json:"usr_id,omitempty"`
-		ChatID        *string        `json:"chat_id"`
-		Status        *gs.StatusGoal `json:"-"`
-		Deadline      *time.Time     `json:"deadline,omitempty"`
-		TimerEnabled  bool           `json:"timer_enabled"`
-		Timer         *time.Duration `json:"timer"`
-		NotifyEnabled bool           `json:"notify_enabled"`
-		LastUpdated   *time.Time     `json:"last_updated,omitempty"`
+		// daily notifications
+		Day    gs.Day `json:"day,omitempty"`
+		Hour   int    `json:"hour,omitempty"`
+		Minute int    `json:"minute,omitempty"`
+
+		// interval notifications
+		IntervalSeconds *float64   `json:"interval_seconds,omitempty"`
+		NextExecution   *time.Time `json:"next_execution,omitempty"`
+
+		// scheduled notification
+		ScheduledTime *time.Time `json:"scheduled_time,omitempty"`
+
+		Message   string        `json:"message,omitempty"`
+		Status    gs.StatusGoal `json:"status,omitempty"`
+		CreatedAt time.Time     `json:"created_at"`
+		UpdatedAt time.Time     `json:"updated_at"`
 	}
 
 	GoalPars struct {
-		ID            *int64
-		UsrID         *int
-		StatusID      *gs.StatusGoal
-		TimerEnabled  *bool
-		NotifyEnabled *bool
+		ID           *int64
+		ChatID       *int64
+		ScheduleType *string
+		Status       *gs.StatusGoal
 	}
 )

@@ -47,6 +47,10 @@ func main() {
 	goalsSvc := goals.NewService(goalsRepo)
 	goalsSvc = goals.NewErrorMW(goalsSvc, sender)
 
-	messageSvc := messages.NewService(cache, goalsSvc, schemeSvc, cfg.TickerInterval)
+	messageSvc := messages.NewService(
+		cache,
+		goalsSvc,
+		schemeSvc,
+	)
 	_ = messageSvc
 }

@@ -81,6 +81,13 @@ func initScheme() []Scheme {
 			},
 		},
 		{
+			CurrentState: gs.StateDeadline,
+			Action: Action{
+				NextState:         gs.StateDone,
+				StrictChangeState: true,
+			},
+		},
+		{
 			CurrentState: gs.StateReminderTime,
 			Action: Action{
 				NextState:         gs.StateDone,
@@ -88,6 +95,13 @@ func initScheme() []Scheme {
 				StrictChangeState: true,
 				MessageToUser:     gs.MessageTimeFormat,
 				NeedTime:          true,
+			},
+		},
+		{
+			CurrentState: gs.StateDone,
+			Action: Action{
+				MessageToUser: gs.MessageDone,
+				IsFinal:       true,
 			},
 		},
 	}

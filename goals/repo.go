@@ -10,12 +10,12 @@ import (
 
 type (
 	Repository interface {
-		Create(ctx context.Context, obj GoalCU) (int64, error)
+		CreateNotification(ctx context.Context, n Goal) (int64, error)
 		Delete(ctx context.Context, id int64) error
 		Get(ctx context.Context, id int64) (Goal, error)
 		List(ctx context.Context, pars GoalPars) ([]Goal, int64, error)
-		DeleteAllUsersGoals(ctx context.Context, usrID int) error
-		Update(ctx context.Context, obj GoalCU, id int64) error
+		DeleteAllUsersGoals(ctx context.Context, chatID string) error
+		Update(ctx context.Context, n Goal, id int64) error
 	}
 
 	repo struct {
@@ -29,49 +29,45 @@ func NewRepo(db *sql.DB) Repository {
 	}
 }
 
-func (r *repo) Create(ctx context.Context, obj GoalCU) (int64, error) {
+func (r *repo) CreateNotification(ctx context.Context, n Goal) (int64, error) {
 	query := `
-INSERT INTO goals (
-	usr_id,
-	chat_id,
+INSERT INTO notifications (
+	telegram_chat_id,
+	schedule_type,
+	interval_seconds,
+	day,                    
+	scheduled_time,
 	message,
-	status_id,
-	deadline,
-	timer,
-	timer_enabled,
-	last_updated,
-	notify_enabled) VALUES (
-	$1, 
-	$2, 
-	$3, 
-	$4, 
-	$5, 
-	$6, 
-	$7, 
-	$8, 
-	$9
+	status,
+	next_execution,
+	created_at,
+	updated_at
+) VALUES (
+	$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 ) RETURNING id`
 
 	var id int64
-	err := r.db.QueryRowContext(ctx,
-		query,
-		*obj.UsrID, *obj.ChatID,
-		*obj.Text,
-		*obj.Status,
-		*obj.Deadline,
-		*obj.Timer,
-		obj.TimerEnabled,
-		*obj.LastUpdated,
-		obj.NotifyEnabled).Scan(&id)
+	err := r.db.QueryRowContext(ctx, query,
+		n.TelegramChatID,
+		n.ScheduleType,
+		n.IntervalSeconds,
+		n.Day,
+		n.ScheduledTime,
+		n.Message,
+		n.Status,
+		n.NextExecution,
+		n.CreatedAt,
+		n.UpdatedAt,
+	).Scan(&id)
 	if err != nil {
-		return 0, fmt.Errorf("create goal: %w", err)
+		return 0, fmt.Errorf("create notification: %w", err)
 	}
 
 	return id, nil
 }
 
 func (r *repo) Delete(ctx context.Context, id int64) error {
-	query := "DELETE FROM goals WHERE id = $1"
+	query := "DELETE FROM notifications WHERE id = $1"
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }
@@ -79,13 +75,33 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 func (r *repo) Get(ctx context.Context, id int64) (Goal, error) {
 	query := `
 SELECT id,
-       usr_id,
-       message,
-       status_id,
-       deadline FROM goals WHERE id = $1`
+    telegram_chat_id,
+	schedule_type,
+	interval_seconds,
+	day,
+	scheduled_time,
+	message,
+	status,
+	next_execution,
+	created_at,
+	updated_at
+       FROM notifications WHERE id = $1`
 
 	var goal Goal
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&goal.ID, &goal.UsrID, &goal.Text, &goal.Status, &goal.Deadline)
+	err := r.db.QueryRowContext(ctx, query, id).
+		Scan(
+			&goal.ID,
+			&goal.TelegramChatID,
+			&goal.ScheduleType,
+			&goal.IntervalSeconds,
+			&goal.Day,
+			&goal.ScheduledTime,
+			&goal.Message,
+			&goal.Status,
+			&goal.NextExecution,
+			&goal.CreatedAt,
+			&goal.UpdatedAt,
+		)
 	if err != nil {
 		return Goal{}, err
 	}
@@ -95,17 +111,18 @@ SELECT id,
 
 func (r *repo) List(ctx context.Context, pars GoalPars) ([]Goal, int64, error) {
 	query := `
-SELECT 
-    id, 
-    usr_id, chat_id,
-    message,
-    status_id,
-    deadline,
-    timer,
-    timer_enabled,
-    last_updated,
-    notify_enabled
-    FROM goals WHERE`
+SELECT id,
+    telegram_chat_id,
+	schedule_type,
+	interval_seconds,
+	day,
+	scheduled_time,
+	message,
+	status,
+	next_execution,
+	created_at,
+	updated_at
+    FROM notifications WHERE`
 
 	var args []interface{}
 
@@ -114,91 +131,103 @@ SELECT
 		query += fmt.Sprintf(" id = $%v AND", len(args))
 	}
 
-	if pars.UsrID != nil {
-		args = append(args, *pars.UsrID)
-		query += fmt.Sprintf(" usr_id = $%v AND", len(args))
+	if pars.ChatID != nil {
+		args = append(args, *pars.ChatID)
+		query += fmt.Sprintf(" telegram_chat_id = $%v AND", len(args))
 	}
 
-	if pars.StatusID != nil {
-		args = append(args, *pars.StatusID)
-		query += fmt.Sprintf(" status_id = $%v AND", len(args))
+	if pars.ScheduleType != nil {
+		args = append(args, *pars.ScheduleType)
+		query += fmt.Sprintf(" schedule_type = $%v AND", len(args))
 	}
 
-	if pars.TimerEnabled != nil {
-		args = append(args, *pars.TimerEnabled)
-		query += fmt.Sprintf(" timer_enabled = $%v AND", len(args))
-	}
-
-	if pars.NotifyEnabled != nil {
-		args = append(args, *pars.NotifyEnabled)
-		query += fmt.Sprintf(" notify_enabled = $%v AND", len(args))
+	if pars.Status != nil {
+		args = append(args, *pars.Status)
+		query += fmt.Sprintf(" status = $%v AND", len(args))
 	}
 
 	query = query[:len(query)-4] // Remove the trailing " AND"
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, 0, fmt.Errorf("list goals: %w", err)
+		return nil, 0, fmt.Errorf("list notifications: %w", err)
 	}
 	defer rows.Close()
 
-	var goals []Goal
+	var notifications []Goal
 	for rows.Next() {
 		var goal Goal
 		err := rows.Scan(
 			&goal.ID,
-			&goal.UsrID,
-			&goal.ChatID,
-			&goal.Text,
+			&goal.TelegramChatID,
+			&goal.ScheduleType,
+			&goal.IntervalSeconds,
+			&goal.Day,
+			&goal.ScheduledTime,
+			&goal.Message,
 			&goal.Status,
-			&goal.Deadline,
-			&goal.Timer,
-			&goal.TimerEnabled,
-			&goal.LastUpdated,
-			&goal.NotifyEnabled,
+			&goal.NextExecution,
+			&goal.CreatedAt,
+			&goal.UpdatedAt,
 		)
 
 		if err != nil {
 			return nil, 0, fmt.Errorf("scan goal: %w", err)
 		}
-		goals = append(goals, goal)
+		notifications = append(notifications, goal)
 	}
 
-	return goals, 0, nil
+	return notifications, 0, nil
 }
 
-func (r *repo) DeleteAllUsersGoals(ctx context.Context, usrID int) error {
-	query := "DELETE FROM goals where usr_id = $1"
-	_, err := r.db.ExecContext(ctx, query, usrID)
+func (r *repo) DeleteAllUsersGoals(ctx context.Context, chatID string) error {
+	query := "DELETE FROM notifications where telegram_chat_id = $1"
+	_, err := r.db.ExecContext(ctx, query, chatID)
 	return err
 }
 
-func (r *repo) Update(ctx context.Context, obj GoalCU, id int64) error {
+func (r *repo) Update(ctx context.Context, n Goal, id int64) error {
 	updateValues := []interface{}{id}
-	queryUpdate := ` UPDATE goals`
+	queryUpdate := `UPDATE notifications`
 	querySet := ` SET id = $1`
 	queryWhere := ` WHERE id = $1`
 
-	if obj.Timer != nil {
-		updateValues = append(updateValues, time.Now().Add(*obj.Timer))
-		querySet += ", last_updated = $" + strconv.Itoa(len(updateValues))
+	if n.TelegramChatID != "" {
+		updateValues = append(updateValues, n.TelegramChatID)
+		querySet += `, telegram_chat_id = $` + strconv.Itoa(len(updateValues))
 	}
-	if obj.UsrID != nil {
-		updateValues = append(updateValues, *obj.UsrID)
-		querySet += ` , usr_id = $` + strconv.Itoa(len(updateValues))
+	if n.ScheduleType != "" {
+		updateValues = append(updateValues, n.ScheduleType)
+		querySet += `, schedule_type = $` + strconv.Itoa(len(updateValues))
 	}
-	if obj.ChatID != nil {
-		updateValues = append(updateValues, *obj.ChatID)
-		querySet += ` , chat_id = $` + strconv.Itoa(len(updateValues))
+	if n.IntervalSeconds != nil {
+		updateValues = append(updateValues, *n.IntervalSeconds)
+		querySet += `, interval_seconds = $` + strconv.Itoa(len(updateValues))
 	}
-	if obj.Status != nil {
-		updateValues = append(updateValues, *obj.Status)
-		querySet += ` , status_id = $` + strconv.Itoa(len(updateValues))
+
+	if n.ScheduledTime != nil {
+		updateValues = append(updateValues, *n.ScheduledTime)
+		querySet += `, scheduled_time = $` + strconv.Itoa(len(updateValues))
 	}
+	if n.Message != "" {
+		updateValues = append(updateValues, n.Message)
+		querySet += `, message = $` + strconv.Itoa(len(updateValues))
+	}
+	if n.Status != "" {
+		updateValues = append(updateValues, n.Status)
+		querySet += `, status = $` + strconv.Itoa(len(updateValues))
+	}
+	if n.NextExecution != nil {
+		updateValues = append(updateValues, *n.NextExecution)
+		querySet += `, next_execution = $` + strconv.Itoa(len(updateValues))
+	}
+
+	updateValues = append(updateValues, time.Now())
+	querySet += `, updated_at = $` + strconv.Itoa(len(updateValues))
 
 	_, err := r.db.ExecContext(ctx, queryUpdate+querySet+queryWhere, updateValues...)
 	if err != nil {
-		return fmt.Errorf("error updating goals: %v", err)
+		return fmt.Errorf("error updating notification: %w", err)
 	}
 
 	return nil

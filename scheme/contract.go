@@ -25,6 +25,7 @@ type (
 
 		NeedTimerInterval bool
 		NeedTime          bool
+		IsFinal           bool
 
 		MessageToUser string
 	}
