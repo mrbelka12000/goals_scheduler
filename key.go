@@ -1,20 +1,23 @@
 package goals_scheduler
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Key string
 
 const (
-	KeyText         Key = "text"
+	KeyMessage      Key = "message"
 	KeyDeadline     Key = "deadline"
+	KeyScheduleType Key = "schedule_type"
 	KeyState        Key = "state"
-	KeyTimer        Key = "timer"
+	KeyInterval     Key = "interval_seconds"
+	KeyTimeOfDay    Key = "time_of_day"
+	KeyDays         Key = "days"
 	KeyHour         Key = "hour"
 	KeyMinute       Key = "minute"
 	KeyNotify       Key = "notify"
-	KeyDay          Key = "day"
-	KeyTimerEnabled Key = "timer_enabled"
-	KeyChoose       Key = "choose"
+	KeyDate         Key = "date"
 )
 
 func (k Key) MarshalBinary() ([]byte, error) {
@@ -22,50 +25,59 @@ func (k Key) MarshalBinary() ([]byte, error) {
 }
 
 var KeysToGoal = []Key{
-	KeyText,
+	KeyMessage,
 	KeyDeadline,
+	KeyScheduleType,
 	KeyState,
-	KeyTimer,
+	KeyInterval,
+	KeyTimeOfDay,
+	KeyDays,
 	KeyHour,
 	KeyMinute,
 	KeyNotify,
-	KeyDay,
-	KeyTimerEnabled,
-	KeyChoose,
+	KeyDate,
 }
 
-func getKey(key Key, userID int) string {
+func GetKey(key Key, userID int64) string {
 	return fmt.Sprintf("%v:%v", key, userID)
 }
 
-func GetKeyText(userID int) string {
-	return getKey(KeyText, userID)
+func GetKeyDate(userID int64) string {
+	return GetKey(KeyDate, userID)
 }
 
-func GetKeyDeadline(userID int) string {
-	return getKey(KeyDeadline, userID)
+func GetKeyScheduleTime(userID int64) string {
+	return GetKey(KeyScheduleType, userID)
 }
 
-func GetKeyTimer(userID int) string {
-	return getKey(KeyTimer, userID)
+func GetKeyInterval(userID int64) string {
+	return GetKey(KeyInterval, userID)
 }
 
-func GetKeyHour(userID int) string {
-	return getKey(KeyHour, userID)
+func GetKeyTimeOfDay(userID int64) string {
+	return GetKey(KeyTimeOfDay, userID)
 }
 
-func GetKeyMinute(userID int) string {
-	return getKey(KeyMinute, userID)
+func GetKeyDays(userID int64) string {
+	return GetKey(KeyDays, userID)
 }
 
-func GetKeyDay(userID int) string {
-	return getKey(KeyDay, userID)
+func GetKeyMessage(userID int64) string {
+	return GetKey(KeyMessage, userID)
 }
 
-func GetKeyState(userID int) string {
-	return getKey(KeyState, userID)
+func GetKeyDeadline(userID int64) string {
+	return GetKey(KeyDeadline, userID)
 }
 
-func GetKeyChoose(userID int) string {
-	return getKey(KeyChoose, userID)
+func GetKeyHour(userID int64) string {
+	return GetKey(KeyHour, userID)
+}
+
+func GetKeyMinute(userID int64) string {
+	return GetKey(KeyMinute, userID)
+}
+
+func GetKeyState(userID int64) string {
+	return GetKey(KeyState, userID)
 }

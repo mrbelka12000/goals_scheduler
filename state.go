@@ -7,12 +7,19 @@ func (s State) MarshalBinary() ([]byte, error) {
 }
 
 const (
-	MessageStateStart       State = "start"
-	MessageStateText        State = "waiting_for_text"
-	MessageStateDeadline    State = "waiting_for_deadline"
-	MessageStateChoseMethod State = "waiting_for_method"
-	MessageStateTimer       State = "waiting_for_timer"
-	MessageStateTime        State = "waiting_for_time"
-	MessageStateDay         State = "waiting_for_day"
-	MessageStateDone        State = "done"
+	StateStart State = "start"
+
+	StateEnterGoal     State = "enter_goal" // need input
+	StateChoseReminder State = "choose_reminder"
+
+	StateTimerInterval State = "waiting_for_timer_interval" // need input
+	StateAlarmDays     State = "alarm_days"
+	StateAlarmTime     State = "alarm_time" // need input
+	StateDeadline      State = "waiting_for_deadline"
+
+	StateNone State = "none"
+
+	StateReminderDate State = "reminder_date"
+	StateReminderTime State = "reminder_time" // need input
+	StateDone         State = "done"
 )

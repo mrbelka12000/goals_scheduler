@@ -22,7 +22,7 @@ type (
 	calendar struct {
 		client *tbot.Client
 
-		// Key is fmt.Sprintf(chatID+:+messageID)
+		// Key is fmt.Sprintf(chatID:messageID)
 		store map[string]*calendarInfo
 		sync.Mutex
 		log zerolog.Logger
