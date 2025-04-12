@@ -9,7 +9,7 @@ type (
 		srv Service
 		es  errorSender
 	}
-	
+
 	errorSender interface {
 		SendError(error)
 	}
@@ -22,7 +22,7 @@ func NewErrorMW(srv Service, es errorSender) *ErrorMW {
 	}
 }
 
-func (e *ErrorMW) Create(ctx context.Context, obj GoalCU) (int64, error) {
+func (e *ErrorMW) Create(ctx context.Context, obj Goal) (int64, error) {
 	out, err := e.srv.Create(ctx, obj)
 	if err != nil {
 		e.es.SendError(err)
@@ -50,8 +50,8 @@ func (e *ErrorMW) List(ctx context.Context, pars GoalPars) ([]Goal, int64, error
 	return out, count, nil
 }
 
-func (e *ErrorMW) DeleteAllOfUsers(ctx context.Context, usrID int) error {
-	err := e.srv.DeleteAllOfUsers(ctx, usrID)
+func (e *ErrorMW) DeleteAllOfUsers(ctx context.Context, chatID string) error {
+	err := e.srv.DeleteAllOfUsers(ctx, chatID)
 	if err != nil {
 		e.es.SendError(err)
 		return err
@@ -59,7 +59,7 @@ func (e *ErrorMW) DeleteAllOfUsers(ctx context.Context, usrID int) error {
 	return nil
 }
 
-func (e *ErrorMW) Update(ctx context.Context, obj GoalCU, id int64) error {
+func (e *ErrorMW) Update(ctx context.Context, obj Goal, id int64) error {
 	err := e.srv.Update(ctx, obj, id)
 	if err != nil {
 		e.es.SendError(err)

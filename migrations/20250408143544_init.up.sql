@@ -1,6 +1,6 @@
 CREATE TABLE notifications (
                                id SERIAL PRIMARY KEY,
-                               telegram_chat_id TEXT NOT NULL,
+                               telegram_chat_id INTEGER NOT NULL,
 
                                schedule_type VARCHAR(20) NOT NULL CHECK (schedule_type IN ('timer', 'daily', 'once')),
     -- For daily notifications
@@ -15,6 +15,7 @@ CREATE TABLE notifications (
     -- For one-time notifications, the exact date and time to execute the notification
                                scheduled_time TIMESTAMP,
 
+                               deadline TIMESTAMP,
                                message TEXT NOT NULL,
                                status VARCHAR(20) DEFAULT 'st',
                                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -23,5 +24,4 @@ CREATE TABLE notifications (
 
 -- Optional: Index to speed up lookup of notifications that are due for processing
 CREATE INDEX idx_next_execution ON notifications(next_execution);
-
 

@@ -9,8 +9,10 @@ import (
 type (
 	Goal struct {
 		ID             int64           `json:"id,omitempty"`
-		TelegramChatID string          `json:"telegram_chat_id,omitempty"`
+		TelegramChatID int64           `json:"telegram_chat_id,omitempty"`
 		ScheduleType   gs.ScheduleType `json:"schedule_type,omitempty"`
+
+		Days []bool `json:"-"` // for insert several records in db
 
 		// daily notifications
 		Day    gs.Day `json:"day,omitempty"`
@@ -24,6 +26,7 @@ type (
 		// scheduled notification
 		ScheduledTime *time.Time `json:"scheduled_time,omitempty"`
 
+		Deadline  *time.Time    `json:"deadline,omitempty"`
 		Message   string        `json:"message,omitempty"`
 		Status    gs.StatusGoal `json:"status,omitempty"`
 		CreatedAt time.Time     `json:"created_at"`

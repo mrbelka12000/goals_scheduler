@@ -38,46 +38,46 @@ var KeysToGoal = []Key{
 	KeyDate,
 }
 
-func getKey(key Key, userID int) string {
+func GetKey(key Key, userID int64) string {
 	return fmt.Sprintf("%v:%v", key, userID)
 }
 
-func GetKeyDate(userID int) string {
-	return getKey(KeyDate, userID)
+func GetKeyDate(userID int64) string {
+	return GetKey(KeyDate, userID)
 }
 
-func GetKeyScheduleTime(userID int) string {
-	return getKey(KeyScheduleType, userID)
+func GetKeyScheduleTime(userID int64) string {
+	return GetKey(KeyScheduleType, userID)
 }
 
-func GetKeyInterval(userID int) string {
-	return getKey(KeyInterval, userID)
+func GetKeyInterval(userID int64) string {
+	return GetKey(KeyInterval, userID)
 }
 
-func GetKeyTimeOfDay(userID int) string {
-	return getKey(KeyTimeOfDay, userID)
+func GetKeyTimeOfDay(userID int64) string {
+	return GetKey(KeyTimeOfDay, userID)
 }
 
-func GetKeyDays(userID int) string {
-	return getKey(KeyDays, userID)
+func GetKeyDays(userID int64) string {
+	return GetKey(KeyDays, userID)
 }
 
-func GetKeyMessage(userID int) string {
-	return getKey(KeyMessage, userID)
+func GetKeyMessage(userID int64) string {
+	return GetKey(KeyMessage, userID)
 }
 
-func GetKeyDeadline(userID int) string {
-	return getKey(KeyDeadline, userID)
+func GetKeyDeadline(userID int64) string {
+	return GetKey(KeyDeadline, userID)
 }
 
-func GetKeyHour(userID int) string {
-	return getKey(KeyHour, userID)
+func GetKeyHour(userID int64) string {
+	return GetKey(KeyHour, userID)
 }
 
-func GetKeyMinute(userID int) string {
-	return getKey(KeyMinute, userID)
+func GetKeyMinute(userID int64) string {
+	return GetKey(KeyMinute, userID)
 }
 
-func GetKeyState(userID int) string {
-	return getKey(KeyState, userID)
+func GetKeyState(userID int64) string {
+	return GetKey(KeyState, userID)
 }

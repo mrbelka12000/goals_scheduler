@@ -81,6 +81,12 @@ func initScheme() []Scheme {
 			},
 		},
 		{
+			CurrentState: gs.StateNone,
+			Action: Action{
+				NextState: gs.StateDone,
+			},
+		},
+		{
 			CurrentState: gs.StateDeadline,
 			Action: Action{
 				NextState:         gs.StateDone,

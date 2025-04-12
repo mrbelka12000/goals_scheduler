@@ -2,6 +2,7 @@ package messages
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -21,15 +22,14 @@ const (
 type (
 	Service interface {
 		HandleMessage(ctx context.Context, msg Message) (response string, err error)
-		HandleCallback(ctx context.Context, cb Callback) (response string, err error)
 		HandleStart(ctx context.Context, msg Message) (response string, err error)
+		SetValue(key gs.Key, value interface{}, userID int64) error
 	}
 
 	service struct {
-		cache cacher
-		goals goals.Service
-
-		scheme scheme.Service
+		cache     cacher
+		goalsSvc  goals.Service
+		schemeSvc scheme.Service
 	}
 
 	cacher interface {
@@ -45,13 +45,11 @@ func NewService(
 	goals goals.Service,
 	scheme scheme.Service,
 ) Service {
-	s := &service{
-		cache:  cache,
-		goals:  goals,
-		scheme: scheme,
+	return &service{
+		cache:     cache,
+		goalsSvc:  goals,
+		schemeSvc: scheme,
 	}
-
-	return s
 }
 
 func (s *service) HandleMessage(ctx context.Context, msg Message) (response string, err error) {
@@ -60,7 +58,8 @@ func (s *service) HandleMessage(ctx context.Context, msg Message) (response stri
 		return "", ErrStateNotFound
 	}
 
-	nextScheme, err := s.scheme.GetNextScheme(gs.State(currentState))
+	fmt.Println(currentState)
+	nextScheme, err := s.schemeSvc.GetNextScheme(gs.State(currentState))
 	if err != nil {
 		return "", fmt.Errorf("get next scheme: %w", err)
 	}
@@ -91,16 +90,11 @@ func (s *service) HandleMessage(ctx context.Context, msg Message) (response stri
 	}
 
 	if nextScheme.Action.IsFinal {
-		goal, err := s.collectInfoForGoal(msg.UserID, msg.ChatID)
-		if err != nil {
-			return "", fmt.Errorf("collect info for goals: %w", err)
-		}
+		defer s.clearCache(msg.UserID)
 
-		s.clearCache(msg.UserID)
-
-		_, err = s.goals.Create(ctx, goal)
+		err = s.createGoal(ctx, msg.UserID, msg.ChatID)
 		if err != nil {
-			return "", fmt.Errorf("create goals: %w", err)
+			return "", fmt.Errorf("create goal: %w", err)
 		}
 
 		return nextScheme.Action.MessageToUser, nil
@@ -114,10 +108,6 @@ func (s *service) HandleMessage(ctx context.Context, msg Message) (response stri
 	return nextScheme.Action.MessageToUser, nil
 }
 
-func (s *service) HandleCallback(ctx context.Context, cb Callback) (response string, err error) {
-	return
-}
-
 func (s *service) HandleStart(ctx context.Context, msg Message) (response string, err error) {
 	s.clearCache(msg.UserID)
 
@@ -126,7 +116,7 @@ func (s *service) HandleStart(ctx context.Context, msg Message) (response string
 		return "", fmt.Errorf("failed to set goal state: %w", err)
 	}
 
-	nextScheme, err := s.scheme.GetNextScheme(gs.StateStart)
+	nextScheme, err := s.schemeSvc.GetNextScheme(gs.StateStart)
 	if err != nil {
 		return "", fmt.Errorf("failed to get next scheme: %w", err)
 	}
@@ -134,7 +124,11 @@ func (s *service) HandleStart(ctx context.Context, msg Message) (response string
 	return nextScheme.Action.MessageToUser, nil
 }
 
-func (s *service) collectInfoForGoal(userID int, chatID string) (goals.Goal, error) {
+func (s *service) SetValue(key gs.Key, value interface{}, userID int64) error {
+	return s.cache.Set(gs.GetKey(key, userID), value, defaultCacheDuration)
+}
+
+func (s *service) collectInfoForGoal(userID, chatID int64) (goals.Goal, error) {
 	goal := goals.Goal{
 		TelegramChatID: chatID,
 	}
@@ -183,7 +177,21 @@ func (s *service) collectInfoForGoal(userID int, chatID string) (goals.Goal, err
 			return goal, fmt.Errorf("invalid days")
 		}
 
-		_ = daysRaw
+		var obj DayInfo
+		err := json.Unmarshal([]byte(daysRaw), &obj)
+		if err != nil {
+			return goal, fmt.Errorf("failed to unmarshal days: %w", err)
+		}
+
+		goal.Days = obj.Mark
+
+		hour, minute, err := getHourAndMinute(values)
+		if err != nil {
+			return goal, err
+		}
+
+		goal.Hour = hour
+		goal.Minute = minute
 
 	case gs.ScheduleTypeOnce:
 
@@ -199,7 +207,41 @@ func (s *service) collectInfoForGoal(userID int, chatID string) (goals.Goal, err
 	return goal, nil
 }
 
-func (s *service) collectAllKeyValuesFromCache(userID int) map[gs.Key]any {
+func (s *service) createGoal(ctx context.Context, userID, chatID int64) error {
+	goal, err := s.collectInfoForGoal(userID, chatID)
+	if err != nil {
+		return fmt.Errorf("collect info for goal: %w", err)
+	}
+
+	switch goal.ScheduleType {
+
+	case gs.ScheduleTypeDaily:
+
+		for i, v := range goal.Days {
+			if v {
+
+				goal.Day = gs.Day(i)
+				_, err := s.goalsSvc.Create(ctx, goal)
+				if err != nil {
+					return fmt.Errorf("create goal: %w", err)
+				}
+
+			}
+		}
+
+	default:
+
+		_, err := s.goalsSvc.Create(ctx, goal)
+		if err != nil {
+			return fmt.Errorf("create goal: %w", err)
+		}
+
+	}
+
+	return nil
+}
+
+func (s *service) collectAllKeyValuesFromCache(userID int64) map[gs.Key]any {
 	values := make(map[gs.Key]any)
 
 	for _, key := range gs.KeysToGoal {
@@ -210,17 +252,16 @@ func (s *service) collectAllKeyValuesFromCache(userID int) map[gs.Key]any {
 	return values
 }
 
-func (s *service) clearCache(userID int) {
+func (s *service) clearCache(userID int64) {
 
 	// delete previous states
 	for _, k := range gs.KeysToGoal {
-		key := fmt.Sprintf("%v:%v", k, userID)
-		s.cache.Delete(key)
+		s.cache.Delete(gs.GetKey(k, userID))
 	}
 
 }
 
-func (s *service) setState(userID int, state gs.State) error {
+func (s *service) setState(userID int64, state gs.State) error {
 	return s.cache.Set(gs.GetKeyState(userID), state, defaultCacheDuration)
 }
 
@@ -283,37 +324,46 @@ func getScheduledTime(values map[gs.Key]any) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("invalid day")
 	}
 
-	hourAny, ok := values[gs.KeyHour]
-	if !ok {
-		return time.Time{}, fmt.Errorf("hour not set")
-	}
-
-	hourStr, ok := hourAny.(string)
-	if !ok {
-		return time.Time{}, fmt.Errorf("invalid hour")
-	}
-
-	hour, err := strconv.Atoi(hourStr)
+	hour, minute, err := getHourAndMinute(values)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid hour")
-	}
-
-	minuteAny, ok := values[gs.KeyMinute]
-	if !ok {
-		return time.Time{}, fmt.Errorf("minute not set")
-	}
-
-	minuteStr, ok := minuteAny.(string)
-	if !ok {
-		return time.Time{}, fmt.Errorf("invalid minute")
-	}
-
-	minute, err := strconv.Atoi(minuteStr)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid minute")
+		return time.Time{}, err
 	}
 
 	scheduledTime := time.Date(year, time.Month(month), day, hour, minute, 0, 0, time.Local)
 
 	return scheduledTime, nil
+}
+
+func getHourAndMinute(values map[gs.Key]any) (hour int, minute int, err error) {
+	hourAny, ok := values[gs.KeyHour]
+	if !ok {
+		return 0, 0, fmt.Errorf("hour not set")
+	}
+
+	hourStr, ok := hourAny.(string)
+	if !ok {
+		return 0, 0, fmt.Errorf("invalid hour")
+	}
+
+	hour, err = strconv.Atoi(hourStr)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid hour")
+	}
+
+	minuteAny, ok := values[gs.KeyMinute]
+	if !ok {
+		return 0, 0, fmt.Errorf("minute not set")
+	}
+
+	minuteStr, ok := minuteAny.(string)
+	if !ok {
+		return 0, 0, fmt.Errorf("invalid minute")
+	}
+
+	minute, err = strconv.Atoi(minuteStr)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid minute")
+	}
+
+	return hour, minute, nil
 }

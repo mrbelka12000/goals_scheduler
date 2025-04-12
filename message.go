@@ -28,4 +28,8 @@ const (
 	MessageChooseMethod = "Выберите метод:"
 
 	MessageNeedText = "Пожалуйста введите сообщение"
+
+	MessageDateBelow = "Нельзя ставить цели на прошлое"
+
+	MessageSet = "Сохранено"
 )

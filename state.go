@@ -7,7 +7,8 @@ func (s State) MarshalBinary() ([]byte, error) {
 }
 
 const (
-	StateStart         State = "start"
+	StateStart State = "start"
+
 	StateEnterGoal     State = "enter_goal" // need input
 	StateChoseReminder State = "choose_reminder"
 
@@ -15,6 +16,8 @@ const (
 	StateAlarmDays     State = "alarm_days"
 	StateAlarmTime     State = "alarm_time" // need input
 	StateDeadline      State = "waiting_for_deadline"
+
+	StateNone State = "none"
 
 	StateReminderDate State = "reminder_date"
 	StateReminderTime State = "reminder_time" // need input

@@ -192,7 +192,7 @@ func (r *repo) Update(ctx context.Context, n Goal, id int64) error {
 	querySet := ` SET id = $1`
 	queryWhere := ` WHERE id = $1`
 
-	if n.TelegramChatID != "" {
+	if n.TelegramChatID != 0 {
 		updateValues = append(updateValues, n.TelegramChatID)
 		querySet += `, telegram_chat_id = $` + strconv.Itoa(len(updateValues))
 	}

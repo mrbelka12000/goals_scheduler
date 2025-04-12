@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -13,6 +16,7 @@ import (
 	"github.com/mrbelka12000/goals_scheduler/pkg/database"
 	"github.com/mrbelka12000/goals_scheduler/pkg/sender/tg"
 	"github.com/mrbelka12000/goals_scheduler/scheme"
+	"github.com/mrbelka12000/goals_scheduler/telegram"
 )
 
 func main() {
@@ -52,5 +56,20 @@ func main() {
 		goalsSvc,
 		schemeSvc,
 	)
-	_ = messageSvc
+
+	_, err = telegram.Connect(cfg, messageSvc, goalsSvc, log)
+	if err != nil {
+		log.Fatal().Err(err).Msg("connect to telegram")
+	}
+	log.Info().Msg("Bot started")
+
+	gs := make(chan os.Signal, 1)
+	signal.Notify(gs, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case sig := <-gs:
+		log.Info().Msg(fmt.Sprintf("Received signal: %d", sig))
+		log.Info().Msg("Server stopped properly")
+		close(gs)
+	}
 }
